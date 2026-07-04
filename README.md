@@ -5,19 +5,33 @@ Sentry-style tracing for CKB Fiber payments.
 FiberTracebox is failure replay and reliability testing infrastructure for CKB Fiber. It turns failed Fiber payments into
 explainable timelines, failure fingerprints, replay evidence, and operator-ready fix reports.
 
+## Submission Links
+
+- Hosted demo: https://fibertracebox-five.vercel.app/
+- Repository: https://github.com/Ajayfrizzy/fibertracebox.git
+- Image/UI: https://drive.google.com/drive/folders/1Mkt6u65gf5GFoBmF6sOC99IjfMMvO5Ll?usp=drive_link
+- Videos: https://drive.google.com/drive/folders/19O9uawG__a2WE1diRS9USbl7Dgo0Wxi1?usp=sharing
+
 ## Selected Category
 
 CKB Fiber Network Infrastructure Hackathon, Category 2: Node, Routing, Cross-Chain, and Diagnostics Infrastructure.
 
 ## Infrastructure Gap Addressed
 
-Fiber developers and node operators need repeatable ways to understand why a payment failed. A raw failure code is not enough:
-operators need the timeline, failed stage, likely cause, replay evidence, and a minimal action to try next.
+Fiber payments can fail for different operational reasons: no route, insufficient route capacity, offline peers, channel policy
+limits, fee limits, invoice problems, timeout, or duplicate payment sessions. Today, a developer or node operator may have to
+inspect raw FNN CLI/RPC output, channel state, invoice data, payment hashes, and logs separately to understand what happened.
+
+The infrastructure gap is an operator-facing diagnostics layer for Fiber payments. A raw failure code or CLI response is not enough on its own; operators need a trace that shows when the request started, which stage failed, what Fiber evidence was
+available, what the likely cause was, and what action should be tried next.
 
 FiberTracebox demonstrates this in two modes:
 
-- deterministic sandbox replay for repeatable failure demos and CI-style diagnostics
-- live Fiber Network Node evidence for real invoices, pubkeys, payment hashes, channel state, and FNN status
+- deterministic sandbox replay for repeatable failure demos, CI-style diagnostics, and Replay-to-Fix recommendations
+- live Fiber Network Node evidence for real invoices, node pubkeys, payment hashes, channel state, balances, and FNN status
+
+In short, FiberTracebox is a tracing and replay layer for Fiber payment reliability: it turns scattered payment/node output
+into a timeline, failure fingerprint, diagnosis, and exportable report.
 
 ## Standout Feature: Replay-to-Fix Engine
 
@@ -36,14 +50,17 @@ It marks the smallest successful fix and includes it in the report.
 
 ## Demo
 
+The hosted demo runs the deterministic sandbox and Replay-to-Fix workflow. Live Fiber RPC is intentionally demonstrated
+locally against a private two-node FNN setup, with raw node outputs and FiberTracebox reports included in `payment-testing/`.
+This avoids exposing Fiber node RPC publicly while still proving real Fiber integration.
+
 1. Open the dashboard.
 2. Run the `route-capacity` sandbox scenario.
 3. Inspect the failed trace timeline and `ROUTE_CAPACITY_INSUFFICIENT` fingerprint.
 4. Run Replay-to-Fix and show the smallest successful fix.
 5. Export the Markdown or JSON report.
-6. Switch to live Fiber RPC mode.
-7. Submit a real Fiber invoice from the two-node test setup.
-8. Show the live trace with FNN pubkeys, payment hash, channel snapshots, payment status, and report export.
+6. Open the live evidence bundle in `payment-testing/`.
+7. Show the FiberTracebox live trace with FNN pubkeys, payment hash, channel snapshots, payment status, and report export.
 
 ## Real Fiber Evidence
 
@@ -159,17 +176,33 @@ npm run test
 npm run build
 ```
 
-## DigitalOcean VPS Deployment Summary
+## Vercel Deployment Summary
 
-1. Create an Ubuntu droplet.
-2. Install Node.js 20, Nginx, PM2, and Certbot.
-3. Clone the repo and configure `.env.local`.
-4. Run `npm install` and `npm run build`.
-5. Start with PM2.
-6. Configure Nginx as a reverse proxy.
-7. Add SSL with Certbot.
+FiberTracebox can be deployed to Vercel for the hosted dashboard, deterministic sandbox, Replay-to-Fix flow, API routes,
+docs, and report export.
 
-See `docs/deployment-digitalocean.md`.
+1. Push the repository to GitHub.
+2. Import the repository in Vercel.
+3. Use the default Next.js build settings.
+4. Add the required environment variables in Vercel Project Settings.
+5. Deploy and open the generated Vercel URL.
+
+Recommended Vercel environment variables:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
+FIBERTRACEBOX_API_KEY=<your-fibertracebox-api-key>
+FIBERTRACEBOX_REQUIRE_API_KEY=true
+FIBER_RPC_ENABLED=false
+FIBER_RPC_LIVE_ENABLED=false
+FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
+```
+
+The hosted Vercel demo is intended for sandbox traces, Replay-to-Fix, docs, and report export. Live Fiber RPC is demonstrated
+locally against a private two-node FNN setup, with raw evidence committed in `payment-testing/`. This avoids exposing an FNN
+JSON-RPC port publicly while still proving real Fiber integration.
 
 ## Roadmap
 
