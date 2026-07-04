@@ -1,0 +1,46 @@
+{
+  "name": "fibertracebox",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Failure replay and reliability testing infrastructure for CKB Fiber payment traces.",
+  "bin": {
+    "fibertracebox": "./dist-cli/cli/index.js"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:cli": "tsc -p tsconfig.cli.json && chmod +x dist-cli/cli/index.js",
+    "start": "next start",
+    "test": "vitest run",
+    "lint": "next lint",
+    "cli": "npm run build:cli --silent && node dist-cli/cli/index.js",
+    "demo": "tsx cli/index.ts scenario run route-capacity"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "commander": "^12.1.0",
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "^4.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^15.0.7",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.5",
+    "jsdom": "^24.1.1",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
