@@ -26,13 +26,13 @@ capacity, peer, fee, or invoice failures.
 Run the helper from the repository root after both local FNN RPC ports are live:
 
 ```bash
-bash payment-testing/failed-transactions/capture-clean-failures.sh all-noninteractive
+bash failed-transactions/capture-clean-failures.sh all-noninteractive
 ```
 
 For peer-offline/route-unavailable, stop node2 when prompted:
 
 ```bash
-bash payment-testing/failed-transactions/capture-clean-failures.sh peer-offline
+bash failed-transactions/capture-clean-failures.sh peer-offline
 ```
 
 The helper writes raw JSON into the existing category folders. It uses these corrected request rules:

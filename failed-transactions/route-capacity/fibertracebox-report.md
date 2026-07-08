@@ -5,7 +5,7 @@
 `send-payment-error.json` reports:
 
 ```txt
-Send payment error: Failed to build route, Insufficient balance: max outbound liquidity 40100000000 is insufficient, required amount: 160000000000
+Send payment error: Failed to build route, Insufficient balance: max outbound liquidity 40099999000 is insufficient, required amount: 160000000000
 ```
 
 ## Why This Fingerprint Is Correct

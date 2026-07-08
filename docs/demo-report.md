@@ -53,7 +53,7 @@ The live proof bundle in `payment-testing/` records a real two-node Fiber paymen
 
 ## Real Failure Corpus
 
-The failed-transaction corpus in `payment-testing/failed-transactions/` contains raw FNN JSON-RPC captures for:
+The failed-transaction corpus in `failed-transactions/` contains raw FNN JSON-RPC captures for:
 
 - `ROUTE_CAPACITY_INSUFFICIENT`: max outbound liquidity below required amount.
 - `ROUTE_NOT_FOUND`: `PathFind error: no path found`.

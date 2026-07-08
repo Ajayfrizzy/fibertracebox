@@ -97,8 +97,9 @@ It marks the smallest successful fix and includes it in the report.
 
 The hosted demo runs the deterministic sandbox and Replay-to-Fix workflow. The `/dashboard/judge-demo` page gives judges a
 guided version of the core flow. Live Fiber RPC is intentionally demonstrated
-locally against a private two-node FNN setup, with raw node outputs and FiberTracebox reports included in `payment-testing/`.
-This avoids exposing Fiber node RPC publicly while still proving real Fiber integration.
+locally against a private two-node FNN setup. The successful live-payment proof bundle is in `payment-testing/`, while raw
+failed-transaction captures are in `failed-transactions/`. This avoids exposing Fiber node RPC publicly while still proving
+real Fiber integration.
 
 1. Open the dashboard.
 2. Run the `route-capacity` sandbox scenario.
@@ -128,11 +129,11 @@ narrative report.
 
 ## Real Failure Corpus
 
-The repository also includes raw failed-transaction captures in `payment-testing/failed-transactions/`.
+The repository also includes raw failed-transaction captures in `failed-transactions/`.
 
 | Fingerprint | Raw FNN evidence |
 | --- | --- |
-| `ROUTE_CAPACITY_INSUFFICIENT` | `max outbound liquidity 40100000000 is insufficient, required amount: 160000000000` |
+| `ROUTE_CAPACITY_INSUFFICIENT` | `max outbound liquidity 40099999000 is insufficient, required amount: 160000000000` |
 | `ROUTE_NOT_FOUND` | `PathFind error: no path found` |
 | `FEE_LIMIT_TOO_LOW` | `max_fee_amount is too low for trampoline routing` |
 | `INVOICE_CANCELLED` | payment status `Failed` with `failed_error: InvoiceCancelled` |
@@ -245,7 +246,7 @@ npm run build
 - Replay-to-Fix is deterministic and intended for reproducible diagnosis, CI-style checks, and operator recommendations.
 - The hosted demo does not expose a public FNN JSON-RPC endpoint.
 - Current graph analysis captures availability, counts, receiver presence when known, and usable captured channels; deeper live path simulation remains roadmap work.
-- Real failed Fiber evidence should be added under `payment-testing/failures/` after local FNN failure testing.
+- Real failed Fiber evidence should be added under `failed-transactions/` after local FNN failure testing.
 
 ## Why This Should Win
 
@@ -282,14 +283,15 @@ FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
 ```
 
 The hosted Vercel demo is intended for sandbox traces, Replay-to-Fix, docs, and report export. Live Fiber RPC is demonstrated
-locally against a private two-node FNN setup, with raw evidence committed in `payment-testing/`. This avoids exposing an FNN
-JSON-RPC port publicly while still proving real Fiber integration.
+locally against a private two-node FNN setup. Successful live-payment evidence is committed in `payment-testing/`, and raw
+failed-payment evidence is committed in `failed-transactions/`. This avoids exposing an FNN JSON-RPC port publicly while
+still proving real Fiber integration.
 
 ## Roadmap
 
 - Graph-aware live Fiber route diagnostics using `graph_nodes`, `graph_channels`, channel policy, and liquidity snapshots.
 - Replay-safe live simulation mode that explains alternate routes without mutating channels or moving funds.
-- Fiber failure corpus built from real FNN `failed_error` and `failure_detail` samples.
+- Expand the Fiber failure corpus with more real FNN `failed_error` and `failure_detail` samples.
 - Trace redaction and retention policies.
 - Multi-node topology import.
 - CI scenario packs for Fiber routing changes.

@@ -7,8 +7,8 @@ import { scenarios } from "@/lib/core/scenarios";
 export const dynamic = "force-dynamic";
 
 const proofLinks = [
-  { label: "Raw FNN evidence index", href: "/dashboard/docs", detail: "Use payment-testing/README.md in the repo" },
-  { label: "Live proof report", href: "/dashboard/docs", detail: "Use payment-testing/trace_49a88732...-fibertracebox-report.md" },
+  { label: "Successful live proof", href: "/dashboard/docs", detail: "Use payment-testing/README.md in the repo" },
+  { label: "Failure evidence corpus", href: "/dashboard/docs", detail: "Use failed-transactions/README.md in the repo" },
   { label: "Production notes", href: "/dashboard/docs", detail: "Sandbox/live boundary and safety model" }
 ];
 
@@ -16,44 +16,44 @@ const realFailureEvidence = [
   {
     title: "Route Capacity",
     fingerprint: "ROUTE_CAPACITY_INSUFFICIENT",
-    message: "max outbound liquidity 40100000000 is insufficient, required amount: 160000000000",
-    rawPath: "payment-testing/failed-transactions/route-capacity/send-payment-error.json",
-    reportPath: "payment-testing/failed-transactions/route-capacity/fibertracebox-report.md"
+    message: "max outbound liquidity 40099999000 is insufficient, required amount: 160000000000",
+    rawPath: "failed-transactions/route-capacity/send-payment-error.json",
+    reportPath: "failed-transactions/route-capacity/fibertracebox-report.md"
   },
   {
     title: "Route Not Found",
     fingerprint: "ROUTE_NOT_FOUND",
     message: "PathFind error: no path found",
-    rawPath: "payment-testing/failed-transactions/route-not-found/send-payment-unknown-target.json",
-    reportPath: "payment-testing/failed-transactions/route-not-found/fibertracebox-report.md"
+    rawPath: "failed-transactions/route-not-found/send-payment-unknown-target.json",
+    reportPath: "failed-transactions/route-not-found/fibertracebox-report.md"
   },
   {
     title: "Fee Limit",
     fingerprint: "FEE_LIMIT_TOO_LOW",
     message: "max_fee_amount is too low for trampoline routing",
-    rawPath: "payment-testing/failed-transactions/fee-limit-too-low/send-payment-low-fee-error.json",
-    reportPath: "payment-testing/failed-transactions/fee-limit-too-low/fibertracebox-report.md"
+    rawPath: "failed-transactions/fee-limit-too-low/send-payment-low-fee-error.json",
+    reportPath: "failed-transactions/fee-limit-too-low/fibertracebox-report.md"
   },
   {
     title: "Invoice Cancelled",
     fingerprint: "INVOICE_CANCELLED",
     message: "payment status Failed with failed_error InvoiceCancelled",
-    rawPath: "payment-testing/failed-transactions/cancelled-invoice/get-payment-after-cancel.json",
-    reportPath: "payment-testing/failed-transactions/cancelled-invoice/fibertracebox-report.md"
+    rawPath: "failed-transactions/cancelled-invoice/get-payment-after-cancel.json",
+    reportPath: "failed-transactions/cancelled-invoice/fibertracebox-report.md"
   },
   {
     title: "Invalid Amount",
     fingerprint: "PAYMENT_AMOUNT_INVALID",
     message: "failed to parse uint hex ... PosOverflow",
-    rawPath: "payment-testing/failed-transactions/invalid-amount/send-payment-validation-error.json",
-    reportPath: "payment-testing/failed-transactions/invalid-amount/fibertracebox-report.md"
+    rawPath: "failed-transactions/invalid-amount/send-payment-validation-error.json",
+    reportPath: "failed-transactions/invalid-amount/fibertracebox-report.md"
   },
   {
     title: "Peer Route Unavailable",
     fingerprint: "PEER_OFFLINE_ROUTE_UNAVAILABLE",
     message: "node2 RPC unavailable, peers_count 0x0, max outbound liquidity 0",
-    rawPath: "payment-testing/failed-transactions/peer-offline/send-payment-route-unavailable.json",
-    reportPath: "payment-testing/failed-transactions/peer-offline/fibertracebox-report.md"
+    rawPath: "failed-transactions/peer-offline/send-payment-route-unavailable.json",
+    reportPath: "failed-transactions/peer-offline/fibertracebox-report.md"
   }
 ];
 
@@ -184,7 +184,7 @@ export default async function JudgeDemoPage() {
               Raw JSON-RPC captures from live Fiber nodes, grouped by the fingerprint FiberTracebox should show in reports.
             </p>
           </div>
-          <span className="mono rounded-md bg-panel px-3 py-2 text-xs font-semibold text-ckb">payment-testing/failed-transactions</span>
+          <span className="mono rounded-md bg-panel px-3 py-2 text-xs font-semibold text-ckb">failed-transactions</span>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {realFailureEvidence.map((evidence) => (

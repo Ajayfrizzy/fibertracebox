@@ -122,6 +122,25 @@ export default function DocsPage() {
       </section>
 
       <section className="mt-6 rounded-lg border border-line bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-ink">Evidence Bundles</h2>
+        <p className="mt-2 leading-7 text-gray-700">
+          Successful live-payment proof is stored in <span className="mono">payment-testing/</span>. Raw failed FNN
+          captures and fingerprint reports are stored in <span className="mono">failed-transactions/</span>.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm text-gray-700">
+          <li>
+            <span className="mono">payment-testing/trace_49a88732-e613-44c1-b65d-60e78c7c1de2-fibertracebox-report.md</span>
+          </li>
+          <li>
+            <span className="mono">failed-transactions/route-capacity/send-payment-error.json</span>
+          </li>
+          <li>
+            <span className="mono">failed-transactions/peer-offline/send-payment-route-unavailable.json</span>
+          </li>
+        </ul>
+      </section>
+
+      <section className="mt-6 rounded-lg border border-line bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-ink">What Works Today</h2>
         <ul className="mt-3 space-y-2 text-sm text-gray-700">
           <li>Working sandbox adapter and deterministic scenario runner.</li>

@@ -196,7 +196,7 @@ EOF
 
 usage() {
   cat <<'EOF'
-Usage: payment-testing/failed-transactions/capture-clean-failures.sh <case>
+Usage: failed-transactions/capture-clean-failures.sh <case>
 
 Cases:
   node-info
