@@ -57,12 +57,13 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
     }
   }
 
-  const disabled = !liveEnabled || running || !invoice.trim();
+  const rpcUnavailable = liveEnabled && probe?.ok === false;
+  const disabled = !liveEnabled || rpcUnavailable || running || !invoice.trim();
   const statusText = !liveEnabled
     ? "Fiber RPC live mode is disabled"
     : probe?.ok
       ? `FNN connected${probe.channelCount === undefined ? "" : `, ${probe.channelCount} channels`}`
-      : probe?.error ?? "FNN probe unavailable";
+      : "Live Fiber RPC is unavailable";
 
   return (
     <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
