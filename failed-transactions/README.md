@@ -49,3 +49,12 @@ The helper writes raw JSON into the existing category folders. It uses these cor
 - `peer-offline`: this capture is labeled as offline peer causing route unavailability. Expected evidence is node2 RPC down, node1 `peers_count: 0x0`, and FNN `max outbound liquidity 0 is insufficient`.
 - `fee-limit-too-low`: `max_fee_amount is too low`, `fee limit`, `route fee exceeds max fee`, or `fee too low`.
 - `cancelled-invoice`: `get-invoice-cancelled.json` must show `status: Cancelled`; `get-payment-after-cancel.json` should show `status: Failed` with a cancelled-invoice failure.
+
+
+
+
+
+
+
+
+ce801787b2a6861b9a9bd19a00edd6ed1a22373df666a4007498885bf7ad74e7
