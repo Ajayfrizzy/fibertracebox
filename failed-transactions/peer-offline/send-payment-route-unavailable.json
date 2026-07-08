@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": 603,
+  "error": {
+    "code": -32000,
+    "message": "Send payment error: Failed to build route, Insufficient balance: max outbound liquidity 0 is insufficient, required amount: 1000"
+  }
+}

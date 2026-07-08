@@ -19,6 +19,9 @@ export interface LiveFiberGraphEvidence {
   available: boolean;
   nodeCount?: number;
   channelCount?: number;
+  receiverPresent?: boolean;
+  usableChannelCount?: number;
+  publicChannelCount?: number;
   errors?: string[];
 }
 
@@ -29,6 +32,19 @@ export interface LiveFiberPaymentEvidence {
   failedError?: string | null;
   invoiceStatus?: string;
   dryRun?: boolean;
+  rpcMethod?: string;
+  invoiceRpcMethod?: string;
+  recoveredFrom?: string;
+}
+
+export interface LiveFiberErrorEvidence {
+  rpcMethod?: string;
+  rpcCode?: number;
+  message?: string;
+  fingerprint?: string;
+  classificationReason?: string;
+  paymentHash?: string;
+  rpcData?: unknown;
 }
 
 export interface LiveFiberEvidence {
@@ -41,8 +57,10 @@ export interface LiveFiberEvidence {
     features?: string[];
   };
   payment?: LiveFiberPaymentEvidence;
+  error?: LiveFiberErrorEvidence;
   channels: LiveFiberChannelEvidence[];
   graph?: LiveFiberGraphEvidence;
+  rpcMethods: string[];
 }
 
 export function extractLiveFiberEvidence(trace: PaymentTrace): LiveFiberEvidence | undefined {
@@ -54,12 +72,14 @@ export function extractLiveFiberEvidence(trace: PaymentTrace): LiveFiberEvidence
   const channelEvent = findEvent(trace.events, "channel_snapshot");
   const graphEvent = findEvent(trace.events, "graph_snapshot");
   const paymentEvent = trace.events.find((event) => event.stage === "payment_result" || event.stage === "route_dry_run");
+  const errorEvent = findEvent(trace.events, "fiber_rpc_error");
 
   const channels = readArray(channelEvent?.metadata?.channels)
     .map(readChannel)
     .filter((channel) => Object.keys(channel).length > 0);
   const graph = readGraph(graphEvent?.metadata);
   const payment = readPayment(paymentEvent?.metadata);
+  const error = readError(errorEvent);
   const node = nodeEvent?.metadata
     ? {
         pubkey: readString(nodeEvent.metadata.pubkey),
@@ -71,15 +91,17 @@ export function extractLiveFiberEvidence(trace: PaymentTrace): LiveFiberEvidence
       }
     : undefined;
 
-  if (!node && !payment && !channels.length && !graph) {
+  if (!node && !payment && !error && !channels.length && !graph) {
     return undefined;
   }
 
   return {
     node,
     payment,
+    error,
     channels,
-    graph
+    graph,
+    rpcMethods: extractRpcMethods(trace.events)
   };
 }
 
@@ -138,6 +160,9 @@ function readGraph(metadata: Record<string, unknown> | undefined): LiveFiberGrap
     available: readBoolean(metadata.available) ?? false,
     nodeCount: readNumber(metadata.nodeCount),
     channelCount: readNumber(metadata.channelCount),
+    receiverPresent: readBoolean(metadata.receiverPresent),
+    usableChannelCount: readNumber(metadata.usableChannelCount),
+    publicChannelCount: readNumber(metadata.publicChannelCount),
     errors: readStringArray(metadata.errors)
   };
 }
@@ -153,10 +178,31 @@ function readPayment(metadata: Record<string, unknown> | undefined): LiveFiberPa
     fee: readStringOrNumber(metadata.fee),
     failedError: readNullableString(metadata.failedError),
     invoiceStatus: readString(metadata.invoiceStatus),
-    dryRun: readBoolean(metadata.dryRun)
+    dryRun: readBoolean(metadata.dryRun),
+    rpcMethod: readString(metadata.rpcMethod),
+    invoiceRpcMethod: readString(metadata.invoiceRpcMethod),
+    recoveredFrom: readString(metadata.recoveredFrom)
   };
 
   return Object.values(payment).some((value) => value !== undefined) ? payment : undefined;
+}
+
+function readError(event: TraceEvent | undefined): LiveFiberErrorEvidence | undefined {
+  if (!event?.metadata) {
+    return undefined;
+  }
+
+  const error: LiveFiberErrorEvidence = {
+    rpcMethod: readString(event.metadata.rpcMethod),
+    rpcCode: readNumber(event.metadata.rpcCode),
+    message: event.message,
+    fingerprint: readString(event.metadata.fingerprint),
+    classificationReason: readString(event.metadata.classificationReason),
+    paymentHash: readString(event.metadata.paymentHash),
+    rpcData: event.metadata.rpcData
+  };
+
+  return Object.values(error).some((value) => value !== undefined) ? error : undefined;
 }
 
 function readArray(value: unknown): unknown[] {
@@ -193,4 +239,27 @@ function readStringOrNumber(value: unknown): string | number | undefined {
 
 function readBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
+}
+
+function extractRpcMethods(events: TraceEvent[]): string[] {
+  const methods = new Set<string>();
+
+  for (const event of events) {
+    const rpcMethod = readString(event.metadata?.rpcMethod);
+    if (rpcMethod) {
+      methods.add(rpcMethod);
+    }
+
+    const invoiceRpcMethod = readString(event.metadata?.invoiceRpcMethod);
+    if (invoiceRpcMethod) {
+      methods.add(invoiceRpcMethod);
+    }
+
+    if (event.stage === "graph_snapshot") {
+      methods.add("graph_nodes");
+      methods.add("graph_channels");
+    }
+  }
+
+  return Array.from(methods);
 }

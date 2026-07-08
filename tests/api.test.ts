@@ -322,7 +322,7 @@ describe("API routes", () => {
       }
 
       if (body.method === "graph_nodes") {
-        return Response.json({ jsonrpc: "2.0", id: 3, result: { nodes: [{ pubkey: "sender-pubkey" }] } });
+        return Response.json({ jsonrpc: "2.0", id: 3, result: { nodes: [{ pubkey: "sender-pubkey" }, { pubkey: "receiver-pubkey" }] } });
       }
 
       if (body.method === "graph_channels") {
@@ -372,6 +372,8 @@ describe("API routes", () => {
       expect(evidence?.node?.version).toBe("0.9.0-rc5");
       expect(evidence?.payment?.paymentHash).toBe(paymentHash);
       expect(evidence?.payment?.invoiceStatus).toBe("Paid");
+      expect(evidence?.payment?.rpcMethod).toBe("send_payment");
+      expect(evidence?.rpcMethods).toEqual(expect.arrayContaining(["node_info", "list_channels", "graph_nodes", "graph_channels", "send_payment", "get_invoice"]));
       expect(evidence?.channels[0]).toMatchObject({
         channelId: "0xchannel",
         stateName: "ChannelReady",
@@ -379,6 +381,90 @@ describe("API routes", () => {
         peerPubkey: "receiver-pubkey"
       });
       expect(evidence?.graph?.available).toBe(true);
+      expect(evidence?.graph?.receiverPresent).toBe(true);
+      expect(evidence?.graph?.usableChannelCount).toBe(1);
+    } finally {
+      restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
+      restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);
+      restoreEnv("FIBER_RPC_URL", previousUrl);
+    }
+  });
+
+  it("classifies live Fiber JSON-RPC failures with structured metadata", async () => {
+    const previousEnabled = process.env.FIBER_RPC_ENABLED;
+    const previousLiveEnabled = process.env.FIBER_RPC_LIVE_ENABLED;
+    const previousUrl = process.env.FIBER_RPC_URL;
+
+    process.env.FIBER_RPC_ENABLED = "true";
+    process.env.FIBER_RPC_LIVE_ENABLED = "true";
+    process.env.FIBER_RPC_URL = "http://fiber-rpc.local";
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      const body = JSON.parse(String(init?.body)) as { method?: string };
+
+      if (body.method === "parse_invoice") {
+        return Response.json({
+          jsonrpc: "2.0",
+          id: 1,
+          result: {
+            invoice: {
+              amount: "0x5f5e100",
+              currency: "Fibt",
+              data: {
+                payment_hash: "0x1111111111111111111111111111111111111111111111111111111111111111",
+                attrs: [{ payee_public_key: "receiver-pubkey" }]
+              }
+            }
+          }
+        });
+      }
+
+      if (body.method === "node_info") {
+        return Response.json({ jsonrpc: "2.0", id: 2, result: { pubkey: "sender-pubkey", version: "0.9.0-rc5" } });
+      }
+
+      if (body.method === "list_channels") {
+        return Response.json({ jsonrpc: "2.0", id: 3, result: { channels: [] } });
+      }
+
+      if (body.method === "graph_nodes") {
+        return Response.json({ jsonrpc: "2.0", id: 4, result: { nodes: [] } });
+      }
+
+      if (body.method === "graph_channels") {
+        return Response.json({ jsonrpc: "2.0", id: 5, result: { channels: [] } });
+      }
+
+      return Response.json({
+        jsonrpc: "2.0",
+        id: 6,
+        error: {
+          code: -32000,
+          message: "insufficient capacity on selected route",
+          data: { route: "capacity below amount" }
+        }
+      });
+    });
+
+    try {
+      const request = new Request("http://localhost/api/traces", {
+        method: "POST",
+        body: JSON.stringify({ invoice: "fibt1liveinvoiceexample", dryRun: true })
+      });
+
+      const response = await tracesPost(request);
+      const json = await response.json();
+      const errorEvent = json.trace.events.find((event: { stage: string }) => event.stage === "fiber_rpc_error");
+
+      expect(response.status).toBe(201);
+      expect(json.trace.status).toBe("failed");
+      expect(json.trace.failureFingerprint).toBe("ROUTE_CAPACITY_INSUFFICIENT");
+      expect(errorEvent.metadata).toMatchObject({
+        rpcMethod: "send_payment",
+        rpcCode: -32000,
+        fingerprint: "ROUTE_CAPACITY_INSUFFICIENT"
+      });
+      expect(errorEvent.metadata.classificationReason).toContain("capacity");
     } finally {
       restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
       restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);

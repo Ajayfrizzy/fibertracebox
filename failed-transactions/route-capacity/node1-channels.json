@@ -1,0 +1,152 @@
+{
+  "jsonrpc": "2.0",
+  "id": 103,
+  "result": {
+    "channels": [
+      {
+        "channel_id": "0x25581acac34c45d88fa2a76d70f565b9a49983630cf10b368a892c9c5a99cd61",
+        "is_public": true,
+        "is_acceptor": false,
+        "is_one_way": false,
+        "channel_outpoint": "0xe260bc491f767c03ea18e66a540f706bab549cbda5202f1140347fccf3408e6c00000000",
+        "pubkey": "0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484",
+        "funding_udt_type_script": null,
+        "state": {
+          "state_name": "ChannelReady"
+        },
+        "local_balance": "0x9502f9000",
+        "offered_tlc_balance": "0x0",
+        "remote_balance": "0x5f5e100",
+        "received_tlc_balance": "0x0",
+        "pending_tlcs": [],
+        "latest_commitment_transaction_hash": "0xb1c565d493184a8d976a0d783a7f13d2e699511952a36e86e6539566a18d6743",
+        "created_at": "0x19f2d834c03",
+        "enabled": true,
+        "tlc_expiry_delta": "0xdbba00",
+        "tlc_fee_proportional_millionths": "0x3e8",
+        "shutdown_transaction_hash": null,
+        "failure_detail": null
+      },
+      {
+        "channel_id": "0x59ba03d42e60323716cd482ddc420968540db1e3518fb7e66c59df29e960d67e",
+        "is_public": true,
+        "is_acceptor": false,
+        "is_one_way": false,
+        "channel_outpoint": "0x11e549d0de6367479e49ae501a1e44ddcaec5ac44629142e491eadec909d954600000000",
+        "pubkey": "0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484",
+        "funding_udt_type_script": null,
+        "state": {
+          "state_name": "ChannelReady"
+        },
+        "local_balance": "0x9502f9000",
+        "offered_tlc_balance": "0x0",
+        "remote_balance": "0x5f5e100",
+        "received_tlc_balance": "0x0",
+        "pending_tlcs": [],
+        "latest_commitment_transaction_hash": "0x4123b24a0608ca0637effaa6c0073593130a1b86fc6e057bf023bdc0b98bd08f",
+        "created_at": "0x19f2d8130c7",
+        "enabled": true,
+        "tlc_expiry_delta": "0xdbba00",
+        "tlc_fee_proportional_millionths": "0x3e8",
+        "shutdown_transaction_hash": null,
+        "failure_detail": null
+      },
+      {
+        "channel_id": "0x406250d4b6274751f70c981e96790f0306430a2f5188a9974a1e23655ba940a8",
+        "is_public": true,
+        "is_acceptor": false,
+        "is_one_way": false,
+        "channel_outpoint": "0x37a78dc262cfc9bd1ecd4a06e5189ee0b3aa9ed602e203b7d5eb0c2b458772cb00000000",
+        "pubkey": "0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484",
+        "funding_udt_type_script": null,
+        "state": {
+          "state_name": "ChannelReady"
+        },
+        "local_balance": "0x956256d18",
+        "offered_tlc_balance": "0x0",
+        "remote_balance": "0x3e8",
+        "received_tlc_balance": "0x0",
+        "pending_tlcs": [],
+        "latest_commitment_transaction_hash": "0xf01f63ad31c280442959a2e7c09bf6e617b7a807b015292fe052c5b38b8c7d35",
+        "created_at": "0x19f2d7ac733",
+        "enabled": true,
+        "tlc_expiry_delta": "0xdbba00",
+        "tlc_fee_proportional_millionths": "0x3e8",
+        "shutdown_transaction_hash": null,
+        "failure_detail": null
+      },
+      {
+        "channel_id": "0xea9a7570d8a911e42074007b6293e2ffb74b73b0ab03ef254fa3bfe96ab1a6b4",
+        "is_public": true,
+        "is_acceptor": false,
+        "is_one_way": false,
+        "channel_outpoint": "0xebc4c3cb6318bad307cf7470196bfaf8aa1e7d756183aa39fbec6831fd0b4f7c00000000",
+        "pubkey": "0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484",
+        "funding_udt_type_script": null,
+        "state": {
+          "state_name": "ChannelReady"
+        },
+        "local_balance": "0x956256d18",
+        "offered_tlc_balance": "0x0",
+        "remote_balance": "0x3e8",
+        "received_tlc_balance": "0x0",
+        "pending_tlcs": [],
+        "latest_commitment_transaction_hash": "0x1acdee2a7a597789208ec4e25a91d7e7d4844e163162b14779ba52e7b3f5c610",
+        "created_at": "0x19f2d651432",
+        "enabled": true,
+        "tlc_expiry_delta": "0xdbba00",
+        "tlc_fee_proportional_millionths": "0x3e8",
+        "shutdown_transaction_hash": null,
+        "failure_detail": null
+      },
+      {
+        "channel_id": "0x047f31d317a0bdace355f645947ea327be530f1e4c3d8f3fd053f6bd200db14f",
+        "is_public": true,
+        "is_acceptor": false,
+        "is_one_way": false,
+        "channel_outpoint": "0x1fef4d921d5df6094a53c333ad34cf6e3c3a2e4dd63ca3b30a8aaf42dce5383b00000000",
+        "pubkey": "0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484",
+        "funding_udt_type_script": null,
+        "state": {
+          "state_name": "ChannelReady"
+        },
+        "local_balance": "0x956256930",
+        "offered_tlc_balance": "0x0",
+        "remote_balance": "0x7d0",
+        "received_tlc_balance": "0x0",
+        "pending_tlcs": [],
+        "latest_commitment_transaction_hash": "0x844a4ee2c59e0eedd6adf5c0cd206d88567fc0241593c242fb4f0004bb6bc13f",
+        "created_at": "0x19f2d62dbcd",
+        "enabled": true,
+        "tlc_expiry_delta": "0xdbba00",
+        "tlc_fee_proportional_millionths": "0x3e8",
+        "shutdown_transaction_hash": null,
+        "failure_detail": null
+      },
+      {
+        "channel_id": "0x893051a3080b5cd96587fab0b9ecd699e2557e8b0993e67805e300d38f23ecda",
+        "is_public": true,
+        "is_acceptor": false,
+        "is_one_way": false,
+        "channel_outpoint": "0xd6feb4d1a026d1663934fa382027959021005815efcbeda61892b1b8afcf7f3c00000000",
+        "pubkey": "0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484",
+        "funding_udt_type_script": null,
+        "state": {
+          "state_name": "ChannelReady"
+        },
+        "local_balance": "0x702198d00",
+        "offered_tlc_balance": "0x0",
+        "remote_balance": "0x2540be400",
+        "received_tlc_balance": "0x0",
+        "pending_tlcs": [],
+        "latest_commitment_transaction_hash": "0x74dd1a1f8cc0e6111b1c235ffa921cfa7bdebe1dda46e2b8987c883bd9aff571",
+        "created_at": "0x19f201d97a2",
+        "enabled": true,
+        "tlc_expiry_delta": "0xdbba00",
+        "tlc_fee_proportional_millionths": "0x3e8",
+        "shutdown_transaction_hash": null,
+        "failure_detail": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":604,"error":{"code":-32602,"message":"Invalid params","data":"invalid type: string \"\", expected struct GetPaymentCommandParams at line 1 column 2"}}

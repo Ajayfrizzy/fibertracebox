@@ -34,10 +34,10 @@ export class FiberTraceboxClient {
     return this.request(`/api/traces/${id}`);
   }
 
-  async runScenario(name: string): Promise<ScenarioRunResponse> {
+  async runScenario(name: string, replay = false): Promise<ScenarioRunResponse> {
     return this.request("/api/scenarios/run", {
       method: "POST",
-      body: JSON.stringify({ scenario: name })
+      body: JSON.stringify({ scenario: name, replay })
     });
   }
 

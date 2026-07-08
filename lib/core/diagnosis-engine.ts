@@ -129,6 +129,38 @@ export const diagnosisCatalog: Record<FailureFingerprint, Omit<Diagnosis, "trace
     confidence: "high",
     replayStrategies: ["same_conditions"]
   },
+  INVOICE_CANCELLED: {
+    title: "Invoice cancelled",
+    explanation: "FNN reported that the payment session failed because the receiver invoice was cancelled.",
+    likelyCauses: [
+      "The receiver cancelled the invoice before settlement",
+      "The sender retried an invoice whose payment hash was already marked cancelled",
+      "Invoice status was not checked before attempting payment"
+    ],
+    suggestedFixes: [
+      "Request a fresh invoice from the receiver",
+      "Check invoice status before retrying",
+      "Do not replay payments against cancelled invoices"
+    ],
+    confidence: "high",
+    replayStrategies: ["same_conditions"]
+  },
+  PAYMENT_AMOUNT_INVALID: {
+    title: "Payment amount invalid",
+    explanation: "FNN rejected the payment request before routing because the amount was malformed or outside valid bounds.",
+    likelyCauses: [
+      "Amount exceeded the valid raw-unit range",
+      "Amount was not encoded as a valid whole raw-unit value",
+      "Client-side request validation allowed an impossible payment amount"
+    ],
+    suggestedFixes: [
+      "Validate amount before calling send_payment",
+      "Use whole raw units within the FNN-supported range",
+      "Retry with a corrected amount"
+    ],
+    confidence: "high",
+    replayStrategies: ["same_conditions"]
+  },
   LIQUIDITY_IMBALANCE: {
     title: "Directional liquidity imbalance",
     explanation: "Channels are active, but spendable liquidity is on the wrong side for this payment direction.",
@@ -160,18 +192,41 @@ export const diagnosisCatalog: Record<FailureFingerprint, Omit<Diagnosis, "trace
     ],
     confidence: "medium",
     replayStrategies: ["same_conditions", "alternate_route", "split_payment", "higher_fee_limit"]
+  },
+  PEER_OFFLINE_ROUTE_UNAVAILABLE: {
+    title: "Peer offline caused route unavailability",
+    explanation: "The target peer or node was unavailable, leaving FNN without a usable outbound route to the payment target.",
+    likelyCauses: [
+      "Target peer process is stopped or unreachable",
+      "Node peer set dropped to zero before payment",
+      "Channels exist but no connected peer can forward the payment"
+    ],
+    suggestedFixes: [
+      "Restart or reconnect the peer",
+      "Refresh peer and graph state before retrying",
+      "Retry after the peer returns to the connected set"
+    ],
+    confidence: "medium",
+    replayStrategies: ["same_conditions", "restored_peer", "retry_after_delay", "alternate_route"]
   }
 };
 
 export function classifyFailureFromEvents(events: Array<{ stage: string; message: string }>): FailureFingerprint | undefined {
   const searchable = events.map((event) => `${event.stage} ${event.message}`).join(" ").toLowerCase();
 
+  if (searchable.includes("peer offline") && searchable.includes("route unavailable")) return "PEER_OFFLINE_ROUTE_UNAVAILABLE";
   if (searchable.includes("capacity") || searchable.includes("max htlc")) return "ROUTE_CAPACITY_INSUFFICIENT";
   if (searchable.includes("peer") && searchable.includes("offline")) return "PEER_OFFLINE";
   if (searchable.includes("channel") && searchable.includes("inactive")) return "CHANNEL_INACTIVE";
   if (searchable.includes("asset") && searchable.includes("unsupported")) return "ASSET_UNSUPPORTED";
   if (searchable.includes("fee") && searchable.includes("limit")) return "FEE_LIMIT_TOO_LOW";
   if (searchable.includes("timeout") || searchable.includes("timed out")) return "PAYMENT_TIMEOUT";
+  if (searchable.includes("invoicecancelled") || searchable.includes("invoice cancelled") || searchable.includes("status cancelled")) {
+    return "INVOICE_CANCELLED";
+  }
+  if (searchable.includes("posoverflow") || searchable.includes("payment amount") || searchable.includes("parse uint hex")) {
+    return "PAYMENT_AMOUNT_INVALID";
+  }
   if (searchable.includes("invoice") && searchable.includes("invalid")) return "INVOICE_INVALID";
   if (searchable.includes("liquidity") && searchable.includes("imbalance")) return "LIQUIDITY_IMBALANCE";
   if (searchable.includes("retry") && searchable.includes("unavailable")) return "RETRY_PATH_UNAVAILABLE";

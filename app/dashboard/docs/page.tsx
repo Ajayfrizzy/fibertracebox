@@ -16,6 +16,7 @@ const apiExamples = [
 
 const localCliExamples = [
   "npm run cli -- health",
+  "npm run demo:judge",
   "npm run cli -- scenario run route-capacity",
   "npm run cli -- live <fiber-invoice>",
   "npm run cli -- trace list",

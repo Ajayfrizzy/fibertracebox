@@ -1,7 +1,7 @@
 import { publicApiError } from "@/lib/api/http";
+import { classifyFiberRpcFailure } from "@/lib/core/fiber-error-classifier";
 import { createId } from "@/lib/core/ids";
 import type {
-  FailureFingerprint,
   PaymentAttemptInput,
   PaymentDataAdapter,
   PaymentStatus,
@@ -120,7 +120,22 @@ interface LiveFiberGraphSnapshot {
   available: boolean;
   nodeCount?: number;
   channelCount?: number;
+  receiverPresent?: boolean;
+  usableChannelCount?: number;
+  publicChannelCount?: number;
   errors?: string[];
+}
+
+class FiberJsonRpcError extends Error {
+  constructor(
+    message: string,
+    readonly method: string,
+    readonly code?: number,
+    readonly data?: unknown
+  ) {
+    super(message);
+    this.name = "FiberJsonRpcError";
+  }
 }
 
 class FiberRpcClient {
@@ -157,7 +172,7 @@ class FiberRpcClient {
     }
 
     if ("error" in payload) {
-      throw new Error(payload.error.message || `FNN RPC error ${payload.error.code}`);
+      throw new FiberJsonRpcError(payload.error.message || `FNN RPC error ${payload.error.code}`, method, payload.error.code, payload.error.data);
     }
 
     return payload.result;
@@ -211,8 +226,11 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
     });
 
     try {
-      const snapshot = await this.snapshot();
+      const invoice = input.invoice ? await this.readInvoice(input.invoice) : undefined;
+      const receiverPubkey = input.targetPubkey ?? invoice?.payeePublicKey;
+      const snapshot = await this.snapshot(receiverPubkey);
       appendEvent(events, traceId, Date.now() - startedAt, "node_info", "Connected to Fiber Network Node RPC", "success", {
+        rpcMethod: "node_info",
         pubkey: snapshot.nodeInfo?.pubkey,
         version: snapshot.nodeInfo?.version,
         nodeName: snapshot.nodeInfo?.node_name,
@@ -223,6 +241,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
 
       if (snapshot.channels?.length) {
         appendEvent(events, traceId, Date.now() - startedAt, "channel_snapshot", `Captured ${snapshot.channels.length} live Fiber channels`, "success", {
+          rpcMethod: "list_channels",
           channelCount: snapshot.channels.length,
           channels: snapshot.channels
         });
@@ -240,7 +259,6 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         );
       }
 
-      const invoice = input.invoice ? await this.readInvoice(input.invoice) : undefined;
       const result = await this.client.call<FiberPaymentResult>("send_payment", buildSendPaymentParams(input, dryRun));
       const invoiceStatus = invoice?.paymentHash ? await this.readInvoiceStatus(invoice.paymentHash) : undefined;
       const latencyMs = Math.max(1, Date.now() - startedAt);
@@ -256,6 +274,8 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         status === "failed" ? "error" : status === "success" ? "success" : "info",
         {
           paymentHash: result.payment_hash,
+          rpcMethod: "send_payment",
+          invoiceRpcMethod: invoice?.paymentHash ? "get_invoice" : undefined,
           status: result.status,
           fee: result.fee,
           failedError,
@@ -265,7 +285,9 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         }
       );
 
-      const fingerprint = status === "failed" ? classifyFiberFailure(failedError || result.status || "payment failed") : undefined;
+      const classification =
+        status === "failed" ? classifyFiberRpcFailure(failedError || invoiceStatus || result.status || "payment failed") : undefined;
+      const fingerprint = classification?.fingerprint;
       const amount = input.amount ?? invoice?.amount ?? 0;
       const asset = input.asset ?? invoice?.currency ?? "CKB";
 
@@ -274,7 +296,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         createdAt: new Date(startedAt).toISOString(),
         mode: "fiber-rpc",
         senderNode: snapshot.nodeInfo?.pubkey ?? snapshot.nodeInfo?.node_name ?? "fiber-rpc-node",
-        receiverNode: input.targetPubkey ?? invoice?.payeePublicKey ?? invoiceReceiverLabel(input.invoice),
+        receiverNode: receiverPubkey ?? invoiceReceiverLabel(input.invoice),
         amount,
         asset,
         status,
@@ -293,9 +315,18 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         return recovered;
       }
 
-      const fingerprint = classifyFiberFailure(message);
+      const rpcError = readFiberRpcError(error);
+      const classification = classifyFiberRpcFailure(message, rpcError.data);
+      const fingerprint = classification.fingerprint;
 
-      appendEvent(events, traceId, latencyMs, "fiber_rpc_error", message, "error", { fingerprint });
+      appendEvent(events, traceId, latencyMs, "fiber_rpc_error", message, "error", {
+        rpcMethod: rpcError.method,
+        rpcCode: rpcError.code,
+        rpcData: sanitizeRpcData(rpcError.data),
+        fingerprint,
+        classificationReason: classification.reason,
+        paymentHash: extractPaymentHash(message)
+      });
 
       return {
         id: traceId,
@@ -333,19 +364,27 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
     };
   }
 
-  private async snapshot(): Promise<FiberRpcSnapshot> {
+  private async snapshot(receiverPubkey?: string): Promise<FiberRpcSnapshot> {
     const [nodeInfo, channels, graph] = await Promise.all([
       this.client.call<FiberNodeInfo>("node_info"),
       this.client.call<FiberListChannelsResult>("list_channels", {}).catch(() => undefined),
-      this.graphSnapshot()
+      this.graphSnapshot(receiverPubkey)
     ]);
     const normalizedChannels = Array.isArray(channels?.channels) ? channels.channels.map(toLiveFiberChannelSnapshot) : [];
+    const usableChannelCount = normalizedChannels.filter((channel) => channel.enabled !== false && channel.stateName === "ChannelReady").length;
+    const publicChannelCount = normalizedChannels.filter((channel) => channel.isPublic).length;
 
     return {
       nodeInfo,
       channelCount: Array.isArray(channels?.channels) ? channels.channels.length : undefined,
       channels: normalizedChannels,
-      graph
+      graph: graph
+        ? {
+            ...graph,
+            usableChannelCount,
+            publicChannelCount
+          }
+        : graph
     };
   }
 
@@ -367,7 +406,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
     }
   }
 
-  private async graphSnapshot(): Promise<LiveFiberGraphSnapshot> {
+  private async graphSnapshot(receiverPubkey?: string): Promise<LiveFiberGraphSnapshot> {
     const errors: string[] = [];
     const [nodes, channels] = await Promise.all([
       this.client.call<unknown>("graph_nodes", {}).catch((error) => {
@@ -381,12 +420,14 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
     ]);
     const nodeCount = countGraphItems(nodes, ["nodes", "graph_nodes"]);
     const channelCount = countGraphItems(channels, ["channels", "graph_channels"]);
+    const receiverPresent = receiverPubkey ? graphContainsPubkey(nodes, receiverPubkey) || graphContainsPubkey(channels, receiverPubkey) : undefined;
 
     return {
       attempted: true,
       available: errors.length === 0,
       ...(nodeCount !== undefined ? { nodeCount } : {}),
       ...(channelCount !== undefined ? { channelCount } : {}),
+      ...(receiverPresent !== undefined ? { receiverPresent } : {}),
       ...(errors.length ? { errors } : {})
     };
   }
@@ -422,6 +463,8 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         status === "failed" ? "error" : status === "success" ? "success" : "info",
         {
           paymentHash,
+          rpcMethod: "get_payment",
+          invoiceRpcMethod: invoiceStatus ? "get_invoice" : undefined,
           status: payment.status,
           fee: payment.fee,
           failedError: payment.failed_error,
@@ -432,7 +475,8 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
       );
 
       const failedError = payment.failed_error?.trim();
-      const fingerprint = status === "failed" ? classifyFiberFailure(failedError || payment.status || originalMessage) : undefined;
+      const fingerprint =
+        status === "failed" ? classifyFiberRpcFailure(failedError || invoiceStatus || payment.status || originalMessage).fingerprint : undefined;
 
       return {
         id: traceId,
@@ -467,7 +511,15 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         "payment_result",
         `Existing Fiber payment session is ${duplicateStatus}`,
         status === "failed" ? "error" : status === "success" ? "success" : "info",
-        { paymentHash, status: duplicateStatus, invoiceStatus, dryRun: input.dryRun ?? !this.allowLivePayments, recoveredFrom: originalMessage }
+        {
+          paymentHash,
+          rpcMethod: "get_payment",
+          invoiceRpcMethod: invoiceStatus ? "get_invoice" : undefined,
+          status: duplicateStatus,
+          invoiceStatus,
+          dryRun: input.dryRun ?? !this.allowLivePayments,
+          recoveredFrom: originalMessage
+        }
       );
 
       return {
@@ -481,7 +533,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         status,
         latencyMs,
         failureStage: status === "failed" ? "payment_result" : undefined,
-        failureFingerprint: status === "failed" ? classifyFiberFailure(originalMessage) : undefined,
+        failureFingerprint: status === "failed" ? classifyFiberRpcFailure(originalMessage).fingerprint : undefined,
         events,
         replayResults: []
       };
@@ -536,26 +588,6 @@ function paymentResultMessage(result: FiberPaymentResult, dryRun: boolean) {
   }
 
   return `FNN returned ${result.status ?? "unknown"} for payment ${result.payment_hash ?? "unknown"}`;
-}
-
-function classifyFiberFailure(message: string): FailureFingerprint {
-  const searchable = message.toLowerCase();
-
-  if (searchable.includes("route") && (searchable.includes("not found") || searchable.includes("no route"))) return "ROUTE_NOT_FOUND";
-  if (searchable.includes("capacity") || searchable.includes("liquidity") || searchable.includes("balance")) return "ROUTE_CAPACITY_INSUFFICIENT";
-  if (searchable.includes("peer") && (searchable.includes("offline") || searchable.includes("disconnect") || searchable.includes("connect"))) {
-    return "PEER_OFFLINE";
-  }
-  if (searchable.includes("channel") && (searchable.includes("inactive") || searchable.includes("disabled") || searchable.includes("closed"))) {
-    return "CHANNEL_INACTIVE";
-  }
-  if (searchable.includes("fee")) return "FEE_LIMIT_TOO_LOW";
-  if (searchable.includes("timeout") || searchable.includes("timed out")) return "PAYMENT_TIMEOUT";
-  if (searchable.includes("invoice")) return "INVOICE_INVALID";
-  if (searchable.includes("retry")) return "RETRY_PATH_UNAVAILABLE";
-  if (searchable.includes("invalidparameter") || searchable.includes("invalid params") || searchable.includes("payment session")) return "INVOICE_INVALID";
-
-  return "ROUTE_NOT_FOUND";
 }
 
 interface ParsedFiberInvoice {
@@ -638,6 +670,26 @@ function countGraphItems(value: unknown, keys: string[]): number | undefined {
   return undefined;
 }
 
+function graphContainsPubkey(value: unknown, pubkey: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  if (typeof value === "string") {
+    return value === pubkey;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => graphContainsPubkey(item, pubkey));
+  }
+
+  if (typeof value !== "object") {
+    return false;
+  }
+
+  return Object.values(value as Record<string, unknown>).some((item) => graphContainsPubkey(item, pubkey));
+}
+
 function readNodeInfoCount(nodeInfo: FiberNodeInfo | undefined, key: keyof FiberNodeInfo): string | number | undefined {
   const value = nodeInfo?.[key];
   return typeof value === "string" || typeof value === "number" ? value : undefined;
@@ -649,6 +701,46 @@ function safeErrorMessage(error: unknown): string {
   }
 
   return "unavailable";
+}
+
+function readFiberRpcError(error: unknown): { method?: string; code?: number; data?: unknown } {
+  if (error instanceof FiberJsonRpcError) {
+    return {
+      method: error.method,
+      code: error.code,
+      data: error.data
+    };
+  }
+
+  return {};
+}
+
+function sanitizeRpcData(data: unknown): unknown {
+  if (data === undefined || data === null) {
+    return data;
+  }
+
+  if (typeof data === "string") {
+    return data.replace(/https?:\/\/\S+/g, "[redacted-url]");
+  }
+
+  if (typeof data === "number" || typeof data === "boolean") {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.slice(0, 20).map(sanitizeRpcData);
+  }
+
+  if (typeof data === "object") {
+    return Object.fromEntries(
+      Object.entries(data as Record<string, unknown>)
+        .slice(0, 30)
+        .map(([key, value]) => [key, sanitizeRpcData(value)])
+    );
+  }
+
+  return String(data);
 }
 
 function appendEvent(

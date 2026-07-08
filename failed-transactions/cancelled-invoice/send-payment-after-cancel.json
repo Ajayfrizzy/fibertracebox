@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 303,
+  "result": {
+    "payment_hash": "0x52c17d17dfb98162abf1140a0277d396887a3eb2909645cdc9b1a1649ea68250",
+    "status": "Created",
+    "created_at": "0x19f3a4a0ada",
+    "last_updated_at": "0x19f3a4a0ada",
+    "failed_error": null,
+    "fee": "0x0",
+    "custom_records": null
+  }
+}

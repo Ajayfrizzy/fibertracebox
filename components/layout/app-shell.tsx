@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Boxes, FileText, Gauge, Microscope, Route, TerminalSquare } from "lucide-react";
+import { Activity, Boxes, FileText, Gauge, Microscope, Presentation, Route, TerminalSquare } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Overview", icon: Gauge },
   { href: "/dashboard/traces", label: "Traces", icon: Route },
   { href: "/dashboard/replay", label: "Replay Lab", icon: Microscope },
   { href: "/dashboard/sandbox", label: "Sandbox", icon: Boxes },
+  { href: "/dashboard/judge-demo", label: "Judge Demo", icon: Presentation },
   { href: "/dashboard/docs", label: "Docs/API", icon: FileText }
 ];
 

@@ -5,6 +5,10 @@
 FiberTracebox is Sentry-style tracing for CKB Fiber payments. It turns Fiber payment attempts into timelines, failure
 fingerprints, replay evidence, and operator-ready reports.
 
+The hackathon thesis is that Fiber needs diagnostics infrastructure, not only payment execution. A raw FNN response can tell
+you that something failed, but an operator needs a timeline, a fingerprint, the available channel/invoice/graph evidence, and
+the safest next action.
+
 The demo has two parts:
 
 - deterministic sandbox replay for repeatable failure analysis
@@ -47,15 +51,37 @@ The live proof bundle in `payment-testing/` records a real two-node Fiber paymen
 | Receiver invoice status | `Paid` |
 | FiberTracebox trace ID | `trace_49a88732-e613-44c1-b65d-60e78c7c1de2` |
 
+## Real Failure Corpus
+
+The failed-transaction corpus in `payment-testing/failed-transactions/` contains raw FNN JSON-RPC captures for:
+
+- `ROUTE_CAPACITY_INSUFFICIENT`: max outbound liquidity below required amount.
+- `ROUTE_NOT_FOUND`: `PathFind error: no path found`.
+- `FEE_LIMIT_TOO_LOW`: `max_fee_amount is too low for trampoline routing`.
+- `INVOICE_CANCELLED`: payment `Failed` with `failed_error: InvoiceCancelled`.
+- `PAYMENT_AMOUNT_INVALID`: uint hex parse overflow.
+- `PEER_OFFLINE_ROUTE_UNAVAILABLE`: node2 RPC unavailable, node1 `peers_count: 0x0`, and no outbound route/liquidity.
+
 ## What This Proves
 
 - FiberTracebox can run a repeatable diagnostic sandbox without requiring live funds.
 - FiberTracebox can connect to a real FNN JSON-RPC endpoint.
+- FiberTracebox can classify FNN-style failure messages into operator-facing failure fingerprints.
 - The live evidence includes node pubkeys, Fiber version, channel readiness, invoice amount, payment hash, final sender status,
   and final receiver invoice status.
 - The exported report gives operators a portable artifact for debugging and handoff.
 - Live replay is intentionally analytical. FiberTracebox captures real FNN evidence for live traces, while sandbox traces are
   the safe replay laboratory for alternate route and liquidity conditions.
+
+## Judge Takeaway
+
+FiberTracebox turns scattered Fiber node evidence into a debugging workflow:
+
+1. Capture the payment attempt as a trace.
+2. Fingerprint the failure.
+3. Explain likely causes and operator fixes.
+4. Replay likely fixes safely in the deterministic lab.
+5. Export the result as Markdown or JSON for handoff.
 
 ## Demo Script
 

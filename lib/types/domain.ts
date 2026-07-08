@@ -13,8 +13,11 @@ export type FailureFingerprint =
   | "FEE_LIMIT_TOO_LOW"
   | "PAYMENT_TIMEOUT"
   | "INVOICE_INVALID"
+  | "INVOICE_CANCELLED"
+  | "PAYMENT_AMOUNT_INVALID"
   | "LIQUIDITY_IMBALANCE"
-  | "RETRY_PATH_UNAVAILABLE";
+  | "RETRY_PATH_UNAVAILABLE"
+  | "PEER_OFFLINE_ROUTE_UNAVAILABLE";
 
 export type ReplayStrategy =
   | "same_conditions"
@@ -29,7 +32,9 @@ export type ReplayStrategy =
   | "longer_timeout"
   | "split_payment"
   | "supported_asset"
-  | "asset_supported_route";
+  | "asset_supported_route"
+  | "fresh_invoice"
+  | "correct_amount";
 
 export type Confidence = "low" | "medium" | "high";
 
@@ -132,6 +137,20 @@ export interface TraceReport {
     smallestFix?: ReplayResult;
     recommendation?: ReplayRecommendation;
     liveEvidence?: unknown;
+    evidenceProvenance: {
+      traceSource: PaymentMode;
+      replayMode: string;
+      liveMutation: "yes" | "no";
+      rpcMethods: string[];
+      observedFailure?: {
+        stage?: string;
+        fingerprint?: FailureFingerprint;
+        rpcMethod?: string;
+        rpcCode?: number;
+        classificationReason?: string;
+      };
+      notes: string[];
+    };
     suggestedNextActions: string[];
     disclosure: string;
   };

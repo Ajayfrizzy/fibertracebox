@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "error": {
+    "code": -32602,
+    "message": "Invalid params",
+    "data": "failed to parse uint hex 0xffffffffffffffffffffffffffffffffffff: ParseIntError { kind: PosOverflow } at line 1 column 135"
+  }
+}

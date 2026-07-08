@@ -16,7 +16,9 @@ const defaultStrategies: ReplayStrategy[] = [
   "longer_timeout",
   "split_payment",
   "supported_asset",
-  "asset_supported_route"
+  "asset_supported_route",
+  "fresh_invoice",
+  "correct_amount"
 ];
 
 export function runReplayStrategy(trace: PaymentTrace, scenario: ReplayStrategy): ReplayResult {
@@ -47,6 +49,12 @@ function strategiesForTrace(trace: PaymentTrace, diagnosisStrategies: ReplayStra
       return ["same_conditions", "higher_fee_limit", "alternate_route"];
     case "ASSET_UNSUPPORTED":
       return ["same_conditions", "supported_asset", "asset_supported_route"];
+    case "INVOICE_CANCELLED":
+      return ["same_conditions", "fresh_invoice"];
+    case "PAYMENT_AMOUNT_INVALID":
+      return ["same_conditions", "correct_amount"];
+    case "PEER_OFFLINE_ROUTE_UNAVAILABLE":
+      return ["same_conditions", "restored_peer", "retry_after_delay", "alternate_route"];
     default:
       return Array.from(new Set(["same_conditions", ...(diagnosisStrategies.length ? diagnosisStrategies : defaultStrategies)])) as ReplayStrategy[];
   }
@@ -149,16 +157,16 @@ function createReplayResult(trace: PaymentTrace, scenario: ReplayStrategy): Repl
       );
     }
     case "restored_peer": {
-      const succeeds = fingerprint === "PEER_OFFLINE";
+      const succeeds = fingerprint === "PEER_OFFLINE" || fingerprint === "PEER_OFFLINE_ROUTE_UNAVAILABLE";
       return resultFor(
         succeeds ? "success" : "failed",
         "Restored unreachable peer before retry",
         Math.max(40, trace.latencyMs - 20),
-        succeeds ? "Restoring peer reachability lets the original route settle." : "Restoring a peer does not target the observed fingerprint."
+        succeeds ? "Restoring peer reachability gives FNN a usable route again." : "Restoring a peer does not target the observed fingerprint."
       );
     }
     case "retry_after_delay": {
-      const succeeds = fingerprint === "PEER_OFFLINE";
+      const succeeds = fingerprint === "PEER_OFFLINE" || fingerprint === "PEER_OFFLINE_ROUTE_UNAVAILABLE";
       return resultFor(
         succeeds ? "success" : "failed",
         "Retried after peer health delay",
@@ -223,6 +231,28 @@ function createReplayResult(trace: PaymentTrace, scenario: ReplayStrategy): Repl
         succeeds
           ? `The alternate route explicitly supports ${asset}, so the original asset can settle.`
           : "An asset-supported route was not relevant to this fingerprint."
+      );
+    }
+    case "fresh_invoice": {
+      const succeeds = fingerprint === "INVOICE_CANCELLED" || fingerprint === "INVOICE_INVALID";
+      return resultFor(
+        succeeds ? "success" : "failed",
+        "Requested a fresh receiver invoice before retry",
+        Math.max(34, trace.latencyMs - 3),
+        succeeds
+          ? "A fresh invoice replaces the cancelled or invalid payment hash and gives the sender a valid retry target."
+          : "Requesting a fresh invoice did not target this failure fingerprint."
+      );
+    }
+    case "correct_amount": {
+      const succeeds = fingerprint === "PAYMENT_AMOUNT_INVALID";
+      return resultFor(
+        succeeds ? "success" : "failed",
+        `Corrected amount to a valid ${asset} raw-unit value`,
+        Math.max(30, trace.latencyMs - 2),
+        succeeds
+          ? "The corrected amount passes FNN request validation and can proceed to route evaluation."
+          : "Correcting amount did not target this failure fingerprint."
       );
     }
   }

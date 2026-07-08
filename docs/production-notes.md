@@ -32,6 +32,13 @@ It uses:
 - `parse_invoice` and `get_invoice` when available for invoice metadata and status.
 - `send_payment` for invoice dry-runs or explicitly enabled live sends.
 
+Live Fiber RPC failures are classified from sanitized FNN error messages and error data. For example, route-not-found,
+capacity/liquidity, peer reachability, fee-limit, invoice, timeout, and retry-path failures are mapped into FiberTracebox
+fingerprints so the same report/diagnosis workflow works for real FNN failures and deterministic sandbox traces.
+
+The classifier is covered with table-driven FNN-style samples in the test suite. When new raw failure outputs are captured
+from local FNN testing, add their sanitized message/data patterns to those tests before expanding the classifier rules.
+
 Set:
 
 ```bash
@@ -56,11 +63,26 @@ intentional: changing live payment conditions can move funds, alter channel stat
 For live traces, the report should be read as operator evidence. For sandbox traces, the report should be read as replayed
 diagnosis and smallest-fix analysis.
 
+Reports include an evidence-source section that names the trace source, replay mode, live mutation state, observed RPC
+methods, and safety notes. If a dry-run observes an existing successful payment session, the report labels it as existing
+session recovery rather than implying FiberTracebox sent a new live payment.
+
 ## Live Evidence Scope
 
 Live traces can show real FNN pubkeys, Fiber version, payment hash, payment status, invoice status when visible from the
-configured node, channel IDs, `ChannelReady` state, enabled flags, local/remote balances, and graph availability. The raw
-two-node proof bundle for the hackathon lives in `payment-testing/`.
+configured node, channel IDs, `ChannelReady` state, enabled flags, local/remote balances, graph availability, graph counts,
+receiver presence when known, and usable captured channel counts. The raw two-node proof bundle for the hackathon lives in
+`payment-testing/`.
+
+## What Is Live vs Simulated
+
+| Capability | Sandbox | Live Fiber RPC |
+| --- | --- | --- |
+| Failure generation | Deterministic model | Real FNN result or error |
+| Replay-to-Fix | Simulated safely | Not executed against FNN |
+| Channel state | Scenario model | `list_channels` snapshot |
+| Graph state | Scenario model | `graph_nodes` / `graph_channels` snapshot when available |
+| Payment send | Simulated | Dry-run by default; live-send only with explicit opt-in |
 
 ## API Protection
 

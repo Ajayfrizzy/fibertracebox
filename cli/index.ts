@@ -14,6 +14,21 @@ program.command("health").description("Check API, database, and mode status.").a
   print(await client.health());
 });
 
+program.command("judge-demo").description("Run the canonical route-capacity demo with Replay-to-Fix enabled.").action(async () => {
+  const result = await client.runScenario("route-capacity", true);
+  const traceId = result.trace.id;
+
+  print({
+    traceId,
+    status: result.trace.status,
+    fingerprint: result.trace.failureFingerprint,
+    recommended: result.recommended,
+    traceUrl: `${process.env.FIBERTRACEBOX_API_URL ?? "http://localhost:3000"}/dashboard/traces/${traceId}`,
+    replayUrl: `${process.env.FIBERTRACEBOX_API_URL ?? "http://localhost:3000"}/dashboard/replay?trace=${traceId}`,
+    markdownReport: `${process.env.FIBERTRACEBOX_API_URL ?? "http://localhost:3000"}/api/traces/${traceId}/report?format=markdown`
+  });
+});
+
 const scenario = program.command("scenario").description("Run deterministic sandbox scenarios.");
 scenario
   .command("run")

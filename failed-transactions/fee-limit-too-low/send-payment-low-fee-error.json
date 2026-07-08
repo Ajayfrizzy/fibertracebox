@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": 700,
+  "error": {
+    "code": -32000,
+    "message": "Send payment error: Failed to build route, Graph other error: max_fee_amount is too low for trampoline routing: recommend_minimal_fee=200100, maximal_fee=2010000 current_fee=0"
+  }
+}

@@ -14,7 +14,8 @@
     "test": "vitest run",
     "lint": "next lint",
     "cli": "npm run build:cli --silent && node dist-cli/cli/index.js",
-    "demo": "tsx cli/index.ts scenario run route-capacity"
+    "demo": "tsx cli/index.ts scenario run route-capacity",
+    "demo:judge": "npm run cli -- judge-demo"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

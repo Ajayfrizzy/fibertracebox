@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": 504,
+  "error": {
+    "code": -32000,
+    "message": "Send payment error: Failed to build route, PathFind error: no path found"
+  }
+}

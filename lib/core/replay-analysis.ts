@@ -86,6 +86,41 @@ export function createReplayRecommendation(trace: PaymentTrace, results: ReplayR
     };
   }
 
+  if (trace.failureFingerprint === "INVOICE_CANCELLED") {
+    return {
+      title: "Request a fresh invoice",
+      summary: "Replay confirms the cancelled invoice remains invalid under the same conditions and succeeds only after replacing it.",
+      primaryAction: "Request a fresh invoice from the receiver and retry with the new payment hash.",
+      operatorAction: "Check invoice status before retrying; do not replay payments against cancelled invoices.",
+      confidence,
+      primaryResult,
+      alternatives
+    };
+  }
+
+  if (trace.failureFingerprint === "PAYMENT_AMOUNT_INVALID") {
+    return {
+      title: "Correct the payment amount",
+      summary: "Replay confirms the original request fails validation and succeeds only after the amount is corrected.",
+      primaryAction: "Retry with a valid whole raw-unit amount inside the FNN-supported range.",
+      operatorAction: "Add client-side amount bounds validation before calling send_payment.",
+      confidence,
+      primaryResult,
+      alternatives
+    };
+  }
+
+  if (trace.failureFingerprint === "PEER_OFFLINE_ROUTE_UNAVAILABLE") {
+    return {
+      title: "Restore peer connectivity",
+      summary: "Replay confirms the unavailable peer condition and succeeds after the peer returns or routing avoids the unavailable peer.",
+      primaryAction: "Restart or reconnect the peer, refresh node graph state, then retry.",
+      confidence,
+      primaryResult,
+      alternatives
+    };
+  }
+
   return {
     title: "Smallest successful replay change",
     summary: primaryResult
@@ -101,6 +136,8 @@ export function createReplayRecommendation(trace: PaymentTrace, results: ReplayR
 export function selectSmallestSuccessfulChange(results: ReplayResult[]): ReplayResult | undefined {
   const rank: ReplayStrategy[] = [
     "supported_asset",
+    "correct_amount",
+    "fresh_invoice",
     "higher_fee_limit",
     "longer_timeout",
     "restored_peer",
@@ -129,7 +166,7 @@ export function capacityDeficit(trace: PaymentTrace): number {
 }
 
 function diagnosisConfidence(fingerprint: PaymentTrace["failureFingerprint"]) {
-  if (fingerprint === "PAYMENT_TIMEOUT" || fingerprint === "RETRY_PATH_UNAVAILABLE") {
+  if (fingerprint === "PAYMENT_TIMEOUT" || fingerprint === "RETRY_PATH_UNAVAILABLE" || fingerprint === "PEER_OFFLINE_ROUTE_UNAVAILABLE") {
     return "medium" as const;
   }
 

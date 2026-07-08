@@ -21,8 +21,11 @@ const stageByFingerprint: Record<FailureFingerprint, string> = {
   FEE_LIMIT_TOO_LOW: "fee_policy",
   PAYMENT_TIMEOUT: "settlement",
   INVOICE_INVALID: "invoice_validation",
+  INVOICE_CANCELLED: "invoice_status",
+  PAYMENT_AMOUNT_INVALID: "request_validation",
   LIQUIDITY_IMBALANCE: "liquidity_check",
-  RETRY_PATH_UNAVAILABLE: "retry_planner"
+  RETRY_PATH_UNAVAILABLE: "retry_planner",
+  PEER_OFFLINE_ROUTE_UNAVAILABLE: "peer_route_check"
 };
 
 const failureMessages: Record<FailureFingerprint, string> = {
@@ -34,8 +37,11 @@ const failureMessages: Record<FailureFingerprint, string> = {
   FEE_LIMIT_TOO_LOW: "Fee limit too low for available route",
   PAYMENT_TIMEOUT: "Payment timed out before settlement",
   INVOICE_INVALID: "Invoice invalid before execution",
+  INVOICE_CANCELLED: "Invoice cancelled before settlement",
+  PAYMENT_AMOUNT_INVALID: "Payment amount invalid before route discovery",
   LIQUIDITY_IMBALANCE: "Directional liquidity imbalance detected",
-  RETRY_PATH_UNAVAILABLE: "Retry path unavailable after first failure"
+  RETRY_PATH_UNAVAILABLE: "Retry path unavailable after first failure",
+  PEER_OFFLINE_ROUTE_UNAVAILABLE: "Peer offline caused route unavailability"
 };
 
 const scenarioLatencies: Record<ScenarioName, number> = {
