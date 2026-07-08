@@ -545,7 +545,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
 }
 
 export async function probeFiberRpc(): Promise<FiberRpcProbeResult | undefined> {
-  if (!process.env.FIBER_RPC_URL) {
+  if (process.env.FIBER_RPC_ENABLED !== "true" || !process.env.FIBER_RPC_URL) {
     return undefined;
   }
 
