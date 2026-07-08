@@ -472,6 +472,86 @@ describe("API routes", () => {
     }
   });
 
+  it("classifies cancelled live Fiber invoices as failed traces", async () => {
+    const previousEnabled = process.env.FIBER_RPC_ENABLED;
+    const previousLiveEnabled = process.env.FIBER_RPC_LIVE_ENABLED;
+    const previousUrl = process.env.FIBER_RPC_URL;
+
+    process.env.FIBER_RPC_ENABLED = "true";
+    process.env.FIBER_RPC_LIVE_ENABLED = "true";
+    process.env.FIBER_RPC_URL = "http://fiber-rpc.local";
+
+    const paymentHash = "0x52c17d17dfb98162abf1140a0277d396887a3eb2909645cdc9b1a1649ea68250";
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      const body = JSON.parse(String(init?.body)) as { method?: string };
+
+      if (body.method === "parse_invoice") {
+        return Response.json({
+          jsonrpc: "2.0",
+          id: 1,
+          result: {
+            invoice: {
+              amount: "0x3e8",
+              currency: "Fibt",
+              data: {
+                payment_hash: paymentHash,
+                attrs: [{ payee_public_key: "receiver-pubkey" }]
+              }
+            }
+          }
+        });
+      }
+
+      if (body.method === "node_info") {
+        return Response.json({ jsonrpc: "2.0", id: 2, result: { pubkey: "sender-pubkey", version: "test" } });
+      }
+
+      if (body.method === "list_channels") {
+        return Response.json({ jsonrpc: "2.0", id: 3, result: { channels: [] } });
+      }
+
+      if (body.method === "graph_nodes") {
+        return Response.json({ jsonrpc: "2.0", id: 4, result: { nodes: [{ pubkey: "receiver-pubkey" }] } });
+      }
+
+      if (body.method === "graph_channels") {
+        return Response.json({ jsonrpc: "2.0", id: 5, result: { channels: [] } });
+      }
+
+      if (body.method === "get_invoice") {
+        return Response.json({ jsonrpc: "2.0", id: 6, result: { status: "Cancelled" } });
+      }
+
+      return Response.json({
+        jsonrpc: "2.0",
+        id: 7,
+        result: { payment_hash: paymentHash, status: "Created", fee: "0x0", failed_error: null }
+      });
+    });
+
+    try {
+      const request = new Request("http://localhost/api/traces", {
+        method: "POST",
+        body: JSON.stringify({ invoice: "fibt1cancelledinvoiceexample", dryRun: true })
+      });
+
+      const response = await tracesPost(request);
+      const json = await response.json();
+      const resultEvent = json.trace.events.find((event: { stage: string }) => event.stage === "route_dry_run");
+
+      expect(response.status).toBe(201);
+      expect(json.trace.status).toBe("failed");
+      expect(json.trace.failureFingerprint).toBe("INVOICE_CANCELLED");
+      expect(json.diagnosis.fingerprint).toBe("INVOICE_CANCELLED");
+      expect(resultEvent.severity).toBe("error");
+      expect(resultEvent.metadata.invoiceStatus).toBe("Cancelled");
+    } finally {
+      restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
+      restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);
+      restoreEnv("FIBER_RPC_URL", previousUrl);
+    }
+  });
+
   it("recovers duplicate successful Fiber payment sessions as successful traces", async () => {
     const previousEnabled = process.env.FIBER_RPC_ENABLED;
     const previousLiveEnabled = process.env.FIBER_RPC_LIVE_ENABLED;

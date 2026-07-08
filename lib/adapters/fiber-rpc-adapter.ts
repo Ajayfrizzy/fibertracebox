@@ -262,15 +262,15 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
       const result = await this.client.call<FiberPaymentResult>("send_payment", buildSendPaymentParams(input, dryRun));
       const invoiceStatus = invoice?.paymentHash ? await this.readInvoiceStatus(invoice.paymentHash) : undefined;
       const latencyMs = Math.max(1, Date.now() - startedAt);
-      const status = normalizePaymentStatus(result.status);
       const failedError = result.failed_error?.trim();
+      const status = normalizePaymentStatus(result.status, { failedError, invoiceStatus });
 
       appendEvent(
         events,
         traceId,
         latencyMs,
         dryRun ? "route_dry_run" : "payment_result",
-        paymentResultMessage(result, dryRun),
+        paymentResultMessage(result, dryRun, invoiceStatus),
         status === "failed" ? "error" : status === "success" ? "success" : "info",
         {
           paymentHash: result.payment_hash,
@@ -286,7 +286,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
       );
 
       const classification =
-        status === "failed" ? classifyFiberRpcFailure(failedError || invoiceStatus || result.status || "payment failed") : undefined;
+        status === "failed" ? classifyFiberRpcFailure(paymentFailureSummary(failedError, invoiceStatus, result.status)) : undefined;
       const fingerprint = classification?.fingerprint;
       const amount = input.amount ?? invoice?.amount ?? 0;
       const asset = input.asset ?? invoice?.currency ?? "CKB";
@@ -451,7 +451,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         this.client.call<FiberPaymentResult>("get_payment", { payment_hash: paymentHash })
       ]);
       const invoiceStatus = paymentHash ? await this.readInvoiceStatus(paymentHash) : undefined;
-      const status = normalizePaymentStatus(payment.status);
+      const status = normalizePaymentStatus(payment.status, { failedError: payment.failed_error, invoiceStatus });
       const latencyMs = Math.max(1, Date.now() - startedAt);
 
       appendEvent(
@@ -459,7 +459,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         traceId,
         latencyMs,
         "payment_result",
-        `Existing Fiber payment session is ${payment.status ?? status}`,
+        existingPaymentMessage(payment.status ?? status, invoiceStatus),
         status === "failed" ? "error" : status === "success" ? "success" : "info",
         {
           paymentHash,
@@ -476,7 +476,9 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
 
       const failedError = payment.failed_error?.trim();
       const fingerprint =
-        status === "failed" ? classifyFiberRpcFailure(failedError || invoiceStatus || payment.status || originalMessage).fingerprint : undefined;
+        status === "failed"
+          ? classifyFiberRpcFailure(paymentFailureSummary(failedError, invoiceStatus, payment.status, originalMessage)).fingerprint
+          : undefined;
 
       return {
         id: traceId,
@@ -501,7 +503,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
 
       const invoice = input.invoice ? await this.readInvoice(input.invoice) : undefined;
       const invoiceStatus = paymentHash ? await this.readInvoiceStatus(paymentHash) : undefined;
-      const status = normalizePaymentStatus(duplicateStatus);
+      const status = normalizePaymentStatus(duplicateStatus, { invoiceStatus });
       const latencyMs = Math.max(1, Date.now() - startedAt);
 
       appendEvent(
@@ -509,7 +511,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         traceId,
         latencyMs,
         "payment_result",
-        `Existing Fiber payment session is ${duplicateStatus}`,
+        existingPaymentMessage(duplicateStatus, invoiceStatus),
         status === "failed" ? "error" : status === "success" ? "success" : "info",
         {
           paymentHash,
@@ -533,7 +535,8 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         status,
         latencyMs,
         failureStage: status === "failed" ? "payment_result" : undefined,
-        failureFingerprint: status === "failed" ? classifyFiberRpcFailure(originalMessage).fingerprint : undefined,
+        failureFingerprint:
+          status === "failed" ? classifyFiberRpcFailure(paymentFailureSummary(undefined, invoiceStatus, duplicateStatus, originalMessage)).fingerprint : undefined,
         events,
         replayResults: []
       };
@@ -570,24 +573,49 @@ function toFiberHexAmount(value: number, field: string): string {
   return `0x${BigInt(value).toString(16)}`;
 }
 
-function normalizePaymentStatus(value: string | undefined): PaymentStatus {
+function normalizePaymentStatus(
+  value: string | undefined,
+  evidence: { failedError?: string | null; invoiceStatus?: string } = {}
+): PaymentStatus {
   const normalized = value?.toLowerCase();
+  const invoiceStatus = evidence.invoiceStatus?.toLowerCase();
+
+  if (evidence.failedError?.trim() || normalized === "failed" || normalized === "cancelled" || invoiceStatus === "cancelled") {
+    return "failed";
+  }
+
   if (normalized === "success") return "success";
   if (normalized === "created" || normalized === "pending" || normalized === "inflight" || normalized === "in_flight") return "pending";
-  if (normalized === "failed") return "failed";
   return "pending";
 }
 
-function paymentResultMessage(result: FiberPaymentResult, dryRun: boolean) {
+function paymentResultMessage(result: FiberPaymentResult, dryRun: boolean, invoiceStatus?: string) {
   if (result.failed_error) {
     return result.failed_error;
   }
 
+  const invoiceSuffix = invoiceStatus ? `; invoice status is ${invoiceStatus}` : "";
+
   if (dryRun) {
-    return `FNN dry-run returned ${result.status ?? "unknown"} for payment ${result.payment_hash ?? "unknown"}`;
+    return `FNN dry-run returned ${result.status ?? "unknown"} for payment ${result.payment_hash ?? "unknown"}${invoiceSuffix}`;
   }
 
-  return `FNN returned ${result.status ?? "unknown"} for payment ${result.payment_hash ?? "unknown"}`;
+  return `FNN returned ${result.status ?? "unknown"} for payment ${result.payment_hash ?? "unknown"}${invoiceSuffix}`;
+}
+
+function existingPaymentMessage(paymentStatus: string, invoiceStatus?: string) {
+  return `Existing Fiber payment session is ${paymentStatus}${invoiceStatus ? `; invoice status is ${invoiceStatus}` : ""}`;
+}
+
+function paymentFailureSummary(failedError?: string, invoiceStatus?: string, paymentStatus?: string, fallback = "payment failed") {
+  const parts = [
+    failedError,
+    invoiceStatus ? `invoice status: ${invoiceStatus}` : undefined,
+    paymentStatus ? `payment status: ${paymentStatus}` : undefined,
+    fallback
+  ].filter(Boolean);
+
+  return parts.join(" ");
 }
 
 interface ParsedFiberInvoice {

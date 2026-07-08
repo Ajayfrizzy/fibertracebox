@@ -8,7 +8,17 @@ export interface FiberFailureClassification {
 export function classifyFiberRpcFailure(message: string, data?: unknown): FiberFailureClassification {
   const searchable = `${message} ${stringifySearchable(data)}`.toLowerCase();
 
-  if (hasAny(searchable, ["invoicecancelled", "invoice cancelled", "status cancelled", "\"status\":\"cancelled\""])) {
+  if (
+    hasAny(searchable, [
+      "invoicecancelled",
+      "invoice cancelled",
+      "invoice status cancelled",
+      "invoice status: cancelled",
+      "payment status cancelled",
+      "payment status: cancelled",
+      "\"status\":\"cancelled\""
+    ])
+  ) {
     return { fingerprint: "INVOICE_CANCELLED", reason: "FNN reported the invoice or payment session was cancelled." };
   }
 
