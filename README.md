@@ -7,7 +7,7 @@ explainable timelines, failure fingerprints, replay evidence, and operator-ready
 
 ## Submission Links
 
-- Hosted demo: https://fibertracebox-five.vercel.app/
+- Hosted demo: https://fibertracebox.online/
 - Repository: https://github.com/Ajayfrizzy/fibertracebox.git
 - Dashboard screenshots: https://drive.google.com/drive/folders/1Mkt6u65gf5GFoBmF6sOC99IjfMMvO5Ll?usp=drive_link
 - Demo walkthrough video: https://drive.google.com/drive/folders/19O9uawG__a2WE1diRS9USbl7Dgo0Wxi1?usp=sharing
