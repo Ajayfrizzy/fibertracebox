@@ -586,6 +586,7 @@ function buildSendPaymentParams(input: PaymentAttemptInput, dryRun: boolean) {
 
   if (input.invoice) params.invoice = input.invoice;
   if (input.targetPubkey) params.target_pubkey = input.targetPubkey;
+  if (input.keysend) params.keysend = true;
   if (input.amount !== undefined) params.amount = toFiberHexAmount(input.amount, "amount");
   if (input.feeLimit !== undefined) params.max_fee_amount = toFiberHexAmount(input.feeLimit, "feeLimit");
 

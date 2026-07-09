@@ -20,7 +20,9 @@ interface LivePaymentRunnerProps {
 
 export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: LivePaymentRunnerProps) {
   const router = useRouter();
+  const [mode, setMode] = useState<"invoice" | "pubkey">("invoice");
   const [invoice, setInvoice] = useState("");
+  const [targetPubkey, setTargetPubkey] = useState("");
   const [amount, setAmount] = useState("");
   const [feeLimit, setFeeLimit] = useState("");
   const [dryRun, setDryRun] = useState(true);
@@ -32,15 +34,26 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
     setError(null);
 
     try {
+      const body =
+        mode === "invoice"
+          ? {
+              invoice: invoice.trim(),
+              ...(amount ? { amount: Number(amount) } : {}),
+              ...(feeLimit ? { feeLimit: Number(feeLimit) } : {}),
+              dryRun: !allowLivePayments || dryRun
+            }
+          : {
+              targetPubkey: targetPubkey.trim(),
+              keysend: true,
+              amount: Number(amount),
+              ...(feeLimit ? { feeLimit: Number(feeLimit) } : {}),
+              dryRun: !allowLivePayments || dryRun
+            };
+
       const response = await fetch("/api/traces", {
         method: "POST",
         headers: apiHeaders({ "content-type": "application/json" }),
-        body: JSON.stringify({
-          invoice: invoice.trim(),
-          ...(amount ? { amount: Number(amount) } : {}),
-          ...(feeLimit ? { feeLimit: Number(feeLimit) } : {}),
-          dryRun: !allowLivePayments || dryRun
-        })
+        body: JSON.stringify(body)
       });
       const payload = (await response.json().catch(() => ({}))) as { trace?: { id: string }; error?: string };
 
@@ -58,7 +71,8 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
   }
 
   const rpcUnavailable = liveEnabled && probe?.ok === false;
-  const disabled = !liveEnabled || rpcUnavailable || running || !invoice.trim();
+  const missingInput = mode === "invoice" ? !invoice.trim() : !targetPubkey.trim() || !amount.trim();
+  const disabled = !liveEnabled || rpcUnavailable || running || missingInput;
   const statusText = !liveEnabled
     ? "Fiber RPC live mode is disabled"
     : probe?.ok
@@ -79,25 +93,61 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
       </div>
 
       <div className="mt-4 grid gap-3">
-        <label className="grid gap-1 text-sm font-semibold text-ink">
-          Invoice
-          <textarea
-            value={invoice}
-            onChange={(event) => setInvoice(event.target.value)}
-            rows={3}
-            placeholder="Paste a Fiber invoice address"
-            className="min-h-24 resize-y rounded-md border border-line bg-white px-3 py-2 text-sm font-normal text-ink outline-none focus:border-ckb"
-          />
-        </label>
+        <div className="inline-grid w-fit grid-cols-2 rounded-md border border-line bg-panel p-1 text-sm font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              setMode("invoice");
+              setError(null);
+            }}
+            className={`rounded px-3 py-1.5 ${mode === "invoice" ? "bg-white text-ink shadow-sm" : "text-gray-600"}`}
+          >
+            Invoice
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("pubkey");
+              setError(null);
+            }}
+            className={`rounded px-3 py-1.5 ${mode === "pubkey" ? "bg-white text-ink shadow-sm" : "text-gray-600"}`}
+          >
+            Pubkey
+          </button>
+        </div>
+
+        {mode === "invoice" ? (
+          <label className="grid gap-1 text-sm font-semibold text-ink">
+            Invoice
+            <textarea
+              value={invoice}
+              onChange={(event) => setInvoice(event.target.value)}
+              rows={3}
+              placeholder="Paste a Fiber invoice address"
+              className="min-h-24 resize-y rounded-md border border-line bg-white px-3 py-2 text-sm font-normal text-ink outline-none focus:border-ckb"
+            />
+          </label>
+        ) : (
+          <label className="grid gap-1 text-sm font-semibold text-ink">
+            Target pubkey
+            <textarea
+              value={targetPubkey}
+              onChange={(event) => setTargetPubkey(event.target.value)}
+              rows={3}
+              placeholder="Paste receiver compressed pubkey"
+              className="min-h-24 resize-y rounded-md border border-line bg-white px-3 py-2 text-sm font-normal text-ink outline-none focus:border-ckb"
+            />
+          </label>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-ink">
-            Amount override
+            {mode === "invoice" ? "Amount override" : "Amount"}
             <input
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               inputMode="decimal"
-              placeholder="invoice default"
+              placeholder={mode === "invoice" ? "invoice default" : "required"}
               className="rounded-md border border-line px-3 py-2 text-sm font-normal outline-none focus:border-ckb"
             />
           </label>
@@ -132,7 +182,7 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
             className="inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
           >
             {running ? <Loader2 className="animate-spin" size={16} /> : dryRun || !allowLivePayments ? <FlaskConical size={16} /> : <Send size={16} />}
-            {dryRun || !allowLivePayments ? "Run Dry-Run" : "Send Payment"}
+            {dryRun || !allowLivePayments ? "Run Dry-Run" : mode === "invoice" ? "Send Payment" : "Send Keysend"}
           </button>
           {probe?.pubkey && <span className="mono max-w-full truncate text-xs text-gray-500">{probe.pubkey}</span>}
         </div>

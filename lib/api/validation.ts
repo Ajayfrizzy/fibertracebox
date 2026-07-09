@@ -14,9 +14,9 @@ const paymentAttemptBodySchema = z
     scenario: scenarioAliasSchema.optional(),
     senderNode: nodeIdSchema.optional(),
     receiverNode: nodeIdSchema.optional(),
-    amount: z.number().finite().positive().max(10_000_000_000).optional(),
+    amount: z.number().int().positive().safe().optional(),
     asset: assetSchema.optional(),
-    feeLimit: z.number().finite().positive().max(10_000_000_000).optional(),
+    feeLimit: z.number().int().nonnegative().safe().optional(),
     timeoutMs: z.number().int().positive().max(300_000).optional(),
     invoice: invoiceSchema.optional(),
     targetPubkey: pubkeySchema.optional(),
@@ -27,6 +27,12 @@ const paymentAttemptBodySchema = z
   .strict()
   .refine((body) => !(body.invoice && body.scenario), {
     message: "Provide either invoice or scenario, not both"
+  })
+  .refine((body) => !(body.invoice && body.targetPubkey), {
+    message: "Provide either invoice or targetPubkey, not both"
+  })
+  .refine((body) => !body.keysend || Boolean(body.targetPubkey), {
+    message: "Keysend checks require targetPubkey"
   });
 
 const scenarioRunBodySchema = z

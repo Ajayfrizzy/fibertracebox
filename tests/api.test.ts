@@ -272,6 +272,80 @@ describe("API routes", () => {
     }
   });
 
+  it("sends keysend Fiber RPC params when checking a target pubkey", async () => {
+    const previousEnabled = process.env.FIBER_RPC_ENABLED;
+    const previousLiveEnabled = process.env.FIBER_RPC_LIVE_ENABLED;
+    const previousUrl = process.env.FIBER_RPC_URL;
+
+    process.env.FIBER_RPC_ENABLED = "true";
+    process.env.FIBER_RPC_LIVE_ENABLED = "true";
+    process.env.FIBER_RPC_URL = "http://fiber-rpc.local";
+
+    const targetPubkey = `02${"1".repeat(64)}`;
+    const requests: unknown[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)));
+      const body = requests.at(-1) as { method?: string };
+
+      if (body.method === "node_info") {
+        return Response.json({ jsonrpc: "2.0", id: 1, result: { pubkey: "sender-pubkey", version: "test" } });
+      }
+
+      if (body.method === "list_channels") {
+        return Response.json({ jsonrpc: "2.0", id: 2, result: { channels: [] } });
+      }
+
+      if (body.method === "graph_nodes") {
+        return Response.json({ jsonrpc: "2.0", id: 3, result: { nodes: [{ pubkey: targetPubkey }] } });
+      }
+
+      if (body.method === "graph_channels") {
+        return Response.json({ jsonrpc: "2.0", id: 4, result: { channels: [] } });
+      }
+
+      return Response.json({
+        jsonrpc: "2.0",
+        id: 5,
+        result: { status: "Success", payment_hash: "0xabc", fee: "0x0" }
+      });
+    });
+
+    try {
+      const request = new Request("http://localhost/api/traces", {
+        method: "POST",
+        body: JSON.stringify({
+          targetPubkey,
+          keysend: true,
+          dryRun: true,
+          amount: 160_000_000_000,
+          feeLimit: 0
+        })
+      });
+
+      const response = await tracesPost(request);
+      const json = await response.json();
+      const sendPaymentRequest = requests.find((body) => (body as { method?: string }).method === "send_payment") as {
+        params: Array<Record<string, unknown>>;
+      };
+
+      expect(response.status).toBe(201);
+      expect(json.trace.receiverNode).toBe(targetPubkey);
+      expect(sendPaymentRequest.params).toEqual([
+        {
+          dry_run: true,
+          target_pubkey: targetPubkey,
+          keysend: true,
+          amount: "0x2540be4000",
+          max_fee_amount: "0x0"
+        }
+      ]);
+    } finally {
+      restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
+      restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);
+      restoreEnv("FIBER_RPC_URL", previousUrl);
+    }
+  });
+
   it("captures live Fiber channel and payment evidence in trace metadata", async () => {
     const previousEnabled = process.env.FIBER_RPC_ENABLED;
     const previousLiveEnabled = process.env.FIBER_RPC_LIVE_ENABLED;
