@@ -259,8 +259,35 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
         );
       }
 
+      const preflightInvoiceStatus = invoice?.paymentHash ? await this.readInvoiceStatus(invoice.paymentHash) : undefined;
+      if (isCancelledStatus(preflightInvoiceStatus)) {
+        const latencyMs = Math.max(1, Date.now() - startedAt);
+        appendEvent(events, traceId, latencyMs, "invoice_status", "Receiver invoice is Cancelled before payment execution", "error", {
+          paymentHash: invoice?.paymentHash,
+          rpcMethod: "get_invoice",
+          invoiceStatus: preflightInvoiceStatus,
+          dryRun
+        });
+
+        return {
+          id: traceId,
+          createdAt: new Date(startedAt).toISOString(),
+          mode: "fiber-rpc",
+          senderNode: snapshot.nodeInfo?.pubkey ?? snapshot.nodeInfo?.node_name ?? "fiber-rpc-node",
+          receiverNode: receiverPubkey ?? invoiceReceiverLabel(input.invoice),
+          amount: input.amount ?? invoice?.amount ?? 0,
+          asset: input.asset ?? invoice?.currency ?? "CKB",
+          status: "failed",
+          latencyMs,
+          failureStage: "invoice_status",
+          failureFingerprint: "INVOICE_CANCELLED",
+          events,
+          replayResults: []
+        };
+      }
+
       const result = await this.client.call<FiberPaymentResult>("send_payment", buildSendPaymentParams(input, dryRun));
-      const invoiceStatus = invoice?.paymentHash ? await this.readInvoiceStatus(invoice.paymentHash) : undefined;
+      const invoiceStatus = invoice?.paymentHash ? preflightInvoiceStatus ?? (await this.readInvoiceStatus(invoice.paymentHash)) : undefined;
       const latencyMs = Math.max(1, Date.now() - startedAt);
       const failedError = result.failed_error?.trim();
       const status = normalizePaymentStatus(result.status, { failedError, invoiceStatus });
@@ -580,13 +607,17 @@ function normalizePaymentStatus(
   const normalized = value?.toLowerCase();
   const invoiceStatus = evidence.invoiceStatus?.toLowerCase();
 
-  if (evidence.failedError?.trim() || normalized === "failed" || normalized === "cancelled" || invoiceStatus === "cancelled") {
+  if (evidence.failedError?.trim() || normalized === "failed" || normalized === "cancelled" || isCancelledStatus(invoiceStatus)) {
     return "failed";
   }
 
   if (normalized === "success") return "success";
   if (normalized === "created" || normalized === "pending" || normalized === "inflight" || normalized === "in_flight") return "pending";
   return "pending";
+}
+
+function isCancelledStatus(value: string | undefined) {
+  return value?.toLowerCase() === "cancelled";
 }
 
 function paymentResultMessage(result: FiberPaymentResult, dryRun: boolean, invoiceStatus?: string) {

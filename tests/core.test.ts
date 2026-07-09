@@ -4,6 +4,7 @@ import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { classifyFiberRpcFailure } from "@/lib/core/fiber-error-classifier";
 import { generateReport } from "@/lib/core/report-generator";
 import { createReplayRecommendation, recommendSmallestFix, runReplayToFix } from "@/lib/core/replay-engine";
+import { formatTraceCreatedAt } from "@/lib/core/time-format";
 import type { FailureFingerprint, PaymentTrace } from "@/lib/types/domain";
 
 describe("FiberTracebox core", () => {
@@ -16,6 +17,11 @@ describe("FiberTracebox core", () => {
     expect(success.events.at(-1)?.severity).toBe("success");
     expect(failed.status).toBe("failed");
     expect(failed.failureFingerprint).toBe("ROUTE_CAPACITY_INSUFFICIENT");
+  });
+
+  it("formats trace creation times without locale-dependent output", () => {
+    expect(formatTraceCreatedAt("2026-07-07T13:04:05.000Z")).toBe("2026-07-07 13:04:05 UTC");
+    expect(formatTraceCreatedAt("not-a-date")).toBe("not-a-date");
   });
 
   it("classifies and diagnoses route capacity failures", async () => {
@@ -310,6 +316,11 @@ describe("FiberTracebox core", () => {
       events: [],
       replayResults: []
     };
+    const invalidTrace = {
+      ...cancelledTrace,
+      id: "trace_invalid",
+      failureFingerprint: "INVOICE_INVALID" as const
+    };
     const amountTrace = {
       ...cancelledTrace,
       id: "trace_amount",
@@ -317,11 +328,15 @@ describe("FiberTracebox core", () => {
     };
 
     const cancelledResults = runReplayToFix(cancelledTrace);
+    const invalidResults = runReplayToFix(invalidTrace);
     const amountResults = runReplayToFix(amountTrace);
 
     expect(cancelledResults.find((result) => result.scenario === "fresh_invoice")?.result).toBe("success");
+    expect(invalidResults.map((result) => result.scenario)).toEqual(["same_conditions", "fresh_invoice"]);
+    expect(invalidResults.find((result) => result.scenario === "fresh_invoice")?.result).toBe("success");
     expect(amountResults.find((result) => result.scenario === "correct_amount")?.result).toBe("success");
     expect(createReplayRecommendation(cancelledTrace, cancelledResults)?.primaryAction).toContain("fresh invoice");
+    expect(createReplayRecommendation(invalidTrace, invalidResults)?.primaryAction).toContain("fresh invoice");
     expect(createReplayRecommendation(amountTrace, amountResults)?.primaryAction).toContain("valid whole raw-unit amount");
   });
 });

@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/traces/status-badge";
 import { formatTraceAmount } from "@/lib/core/amount-format";
 import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { generateReport } from "@/lib/core/report-generator";
-import { recommendSmallestFix } from "@/lib/core/replay-engine";
+import { listReplayStrategiesForTrace, recommendSmallestFix } from "@/lib/core/replay-engine";
 import { getDiagnosis, getTrace, listTraces, saveDiagnosis } from "@/lib/api/repository";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +63,7 @@ export default async function ReplayLabPage({ searchParams }: ReplayLabPageProps
   const smallestFix = recommendSmallestFix(selected.replayResults);
   const report = generateReport(selected);
   const failureEvent = selected.events.find((event) => event.severity === "error") ?? selected.events.at(-1);
-  const generatedScenarios = diagnosis?.replayStrategies ?? [];
+  const generatedScenarios = listReplayStrategiesForTrace(selected);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -206,7 +206,11 @@ export default async function ReplayLabPage({ searchParams }: ReplayLabPageProps
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <SummaryItem label="Original" value="Failed" icon={<AlertTriangle size={16} />} />
-          <SummaryItem label="Replay" value={smallestFix ? "Success" : "Pending"} icon={<Clock3 size={16} />} />
+          <SummaryItem
+            label="Replay"
+            value={smallestFix ? "Success" : selected.replayResults.length ? "No successful fix" : "Pending"}
+            icon={<Clock3 size={16} />}
+          />
           <SummaryItem label="Confidence" value={diagnosis?.confidence ?? "pending"} />
         </div>
       </section>

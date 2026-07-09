@@ -537,14 +537,18 @@ describe("API routes", () => {
 
       const response = await tracesPost(request);
       const json = await response.json();
-      const resultEvent = json.trace.events.find((event: { stage: string }) => event.stage === "route_dry_run");
+      const resultEvent = json.trace.events.find((event: { stage: string }) => event.stage === "invoice_status");
+      const evidence = extractLiveFiberEvidence(json.trace);
 
       expect(response.status).toBe(201);
       expect(json.trace.status).toBe("failed");
       expect(json.trace.failureFingerprint).toBe("INVOICE_CANCELLED");
       expect(json.diagnosis.fingerprint).toBe("INVOICE_CANCELLED");
+      expect(json.trace.failureStage).toBe("invoice_status");
       expect(resultEvent.severity).toBe("error");
       expect(resultEvent.metadata.invoiceStatus).toBe("Cancelled");
+      expect(evidence?.payment?.paymentHash).toBe(paymentHash);
+      expect(evidence?.payment?.invoiceStatus).toBe("Cancelled");
     } finally {
       restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
       restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);

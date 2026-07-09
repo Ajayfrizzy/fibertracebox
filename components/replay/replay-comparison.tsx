@@ -8,6 +8,8 @@ interface ReplayComparisonProps {
 }
 
 export function ReplayComparison({ trace, result }: ReplayComparisonProps) {
+  const replayStatus = result?.result ?? (trace.replayResults.length ? "No successful fix" : "Pending");
+
   return (
     <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-ink">Original vs Replay</h2>
@@ -45,7 +47,7 @@ export function ReplayComparison({ trace, result }: ReplayComparisonProps) {
             <p className="text-sm font-semibold text-emerald-800">Replay</p>
             <span className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1 text-xs font-semibold uppercase text-emerald-700">
               <CheckCircle2 size={14} />
-              {result?.result ?? "Pending"}
+              {replayStatus}
             </span>
           </div>
           {result ? (

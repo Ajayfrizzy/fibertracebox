@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Clipboard, Search } from "lucide-react";
 import type { FailureFingerprint, PaymentMode, PaymentStatus, PaymentTrace } from "@/lib/types/domain";
 import { formatTraceAmount } from "@/lib/core/amount-format";
+import { formatTraceCreatedAt } from "@/lib/core/time-format";
 import { StatusBadge } from "@/components/traces/status-badge";
 
 interface TraceTableProps {
@@ -218,7 +219,7 @@ export function TraceTable({ traces, compact = false }: TraceTableProps) {
                     </td>
                     {!compact && <td className="whitespace-nowrap px-4 py-3 text-gray-700">{trace.mode}</td>}
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">{trace.latencyMs}ms</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">{new Date(trace.createdAt).toLocaleString()}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">{formatTraceCreatedAt(trace.createdAt)}</td>
                     {!compact && (
                       <td className="whitespace-nowrap px-4 py-3">
                         <div className="flex items-center gap-2">

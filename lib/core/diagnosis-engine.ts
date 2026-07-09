@@ -127,7 +127,7 @@ export const diagnosisCatalog: Record<FailureFingerprint, Omit<Diagnosis, "trace
       "Ensure sender and receiver agree on amount and asset"
     ],
     confidence: "high",
-    replayStrategies: ["same_conditions"]
+    replayStrategies: ["same_conditions", "fresh_invoice"]
   },
   INVOICE_CANCELLED: {
     title: "Invoice cancelled",

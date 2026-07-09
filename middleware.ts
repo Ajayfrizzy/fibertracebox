@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
     response.cookies.set(DASHBOARD_WRITE_COOKIE, apiKey, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttpsRequest(request),
       path: "/"
     });
   }
@@ -19,6 +19,15 @@ export function middleware(request: NextRequest) {
 
 function isDashboardRequest(request: NextRequest) {
   return request.nextUrl.pathname === "/" || request.nextUrl.pathname.startsWith("/dashboard");
+}
+
+function isHttpsRequest(request: NextRequest) {
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  if (forwardedProto) {
+    return forwardedProto === "https";
+  }
+
+  return request.nextUrl.protocol === "https:";
 }
 
 export const config = {

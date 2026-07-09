@@ -49,7 +49,7 @@ export function generateReport(trace: PaymentTrace): TraceReport {
 - Receiver: ${trace.receiverNode}
 - Mode: ${trace.mode}
 - Latency: ${trace.latencyMs}ms
-- Failure time: ${trace.status === "failed" ? `${trace.latencyMs}ms` : "not applicable"}
+- Failure time: ${trace.failureFingerprint ? `${trace.latencyMs}ms` : "not applicable"}
 - Failure stage: ${trace.failureStage ?? "not applicable"}
 - Failure fingerprint: ${trace.failureFingerprint ?? "not applicable"}
 ${liveEvidence?.payment?.paymentHash ? `- Payment hash: ${liveEvidence.payment.paymentHash}` : ""}

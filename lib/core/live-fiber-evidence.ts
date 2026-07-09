@@ -71,7 +71,9 @@ export function extractLiveFiberEvidence(trace: PaymentTrace): LiveFiberEvidence
   const nodeEvent = findEvent(trace.events, "node_info");
   const channelEvent = findEvent(trace.events, "channel_snapshot");
   const graphEvent = findEvent(trace.events, "graph_snapshot");
-  const paymentEvent = trace.events.find((event) => event.stage === "payment_result" || event.stage === "route_dry_run");
+  const paymentEvent = trace.events.find(
+    (event) => event.stage === "payment_result" || event.stage === "route_dry_run" || event.stage === "invoice_status"
+  );
   const errorEvent = findEvent(trace.events, "fiber_rpc_error");
 
   const channels = readArray(channelEvent?.metadata?.channels)

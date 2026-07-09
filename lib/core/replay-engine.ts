@@ -26,8 +26,7 @@ export function runReplayStrategy(trace: PaymentTrace, scenario: ReplayStrategy)
 }
 
 export function runReplayToFix(trace: PaymentTrace): ReplayResult[] {
-  const diagnosis = diagnoseTrace(trace);
-  const strategies = strategiesForTrace(trace, diagnosis?.replayStrategies);
+  const strategies = listReplayStrategiesForTrace(trace);
   const results = strategies.map((strategy) => runReplayStrategy(trace, strategy));
   const recommended = chooseRecommendedForTrace(trace, results);
 
@@ -35,6 +34,11 @@ export function runReplayToFix(trace: PaymentTrace): ReplayResult[] {
     ...result,
     recommended: result.id === recommended?.id
   }));
+}
+
+export function listReplayStrategiesForTrace(trace: PaymentTrace): ReplayStrategy[] {
+  const diagnosis = diagnoseTrace(trace);
+  return strategiesForTrace(trace, diagnosis?.replayStrategies);
 }
 
 function strategiesForTrace(trace: PaymentTrace, diagnosisStrategies: ReplayStrategy[] = []): ReplayStrategy[] {
@@ -49,6 +53,8 @@ function strategiesForTrace(trace: PaymentTrace, diagnosisStrategies: ReplayStra
       return ["same_conditions", "higher_fee_limit", "alternate_route"];
     case "ASSET_UNSUPPORTED":
       return ["same_conditions", "supported_asset", "asset_supported_route"];
+    case "INVOICE_INVALID":
+      return ["same_conditions", "fresh_invoice"];
     case "INVOICE_CANCELLED":
       return ["same_conditions", "fresh_invoice"];
     case "PAYMENT_AMOUNT_INVALID":

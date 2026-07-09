@@ -98,6 +98,18 @@ export function createReplayRecommendation(trace: PaymentTrace, results: ReplayR
     };
   }
 
+  if (trace.failureFingerprint === "INVOICE_INVALID") {
+    return {
+      title: "Request a fresh invoice",
+      summary: "Replay confirms the original invoice cannot pass validation under the same conditions and succeeds only after replacing it.",
+      primaryAction: "Request a fresh invoice from the receiver and retry with the new payment hash.",
+      operatorAction: "Validate invoice expiry, amount, asset, and payee fields before route discovery.",
+      confidence,
+      primaryResult,
+      alternatives
+    };
+  }
+
   if (trace.failureFingerprint === "PAYMENT_AMOUNT_INVALID") {
     return {
       title: "Correct the payment amount",
