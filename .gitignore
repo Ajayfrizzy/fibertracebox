@@ -8,4 +8,6 @@ dist-cli
 .DS_Store
 tsconfig.tsbuildinfo
 npm-debug.log*
+test-results/
+playwright-report/
 vps_deploy.md

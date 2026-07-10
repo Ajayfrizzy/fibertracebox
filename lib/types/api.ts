@@ -1,4 +1,4 @@
-import type { Diagnosis, PaymentTrace, ReplayResult, ScenarioName, Stats, TraceReport, TraceWithAnalysis } from "./domain";
+import type { Diagnosis, LiveVerificationResult, PaymentTrace, ReplayResult, ScenarioName, Stats, TraceReport, TraceWithAnalysis } from "./domain";
 
 export interface ApiError {
   error: string;
@@ -18,10 +18,7 @@ export interface HealthResponse {
     probe?: {
       ok: boolean;
       error?: string;
-      pubkey?: string;
       version?: string;
-      nodeName?: string;
-      addresses?: string[];
       channelCount?: number;
     };
   };
@@ -39,6 +36,8 @@ export interface ReplayResponse {
   replayResults: ReplayResult[];
   recommended?: ReplayResult;
 }
+
+export type LiveVerificationResponse = LiveVerificationResult;
 
 export interface ListScenariosResponse {
   scenarios: Array<{

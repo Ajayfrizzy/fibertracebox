@@ -77,6 +77,22 @@ program
   });
 
 program
+  .command("verify")
+  .argument("<traceId>", "Failed live Fiber trace ID")
+  .argument("<invoice>", "Fresh or corrected Fiber invoice")
+  .option("--amount <amount>", "Amount override in Shannon", parseNumber)
+  .option("--fee-limit <amount>", "Max fee amount in Shannon", parseNumber)
+  .description("Verify an operator fix with a linked FNN dry-run.")
+  .action(async (traceId: string, invoice: string, options: { amount?: number; feeLimit?: number }) => {
+    print(await client.verifyLiveTrace(traceId, {
+      invoice,
+      dryRun: true,
+      ...(options.amount !== undefined ? { amount: options.amount } : {}),
+      ...(options.feeLimit !== undefined ? { feeLimit: options.feeLimit } : {})
+    }));
+  });
+
+program
   .command("report")
   .argument("<traceId>", "Trace ID")
   .option("--format <format>", "markdown or json", "markdown")

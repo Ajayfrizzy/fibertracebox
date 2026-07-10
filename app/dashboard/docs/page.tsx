@@ -11,6 +11,7 @@ const localCliExamples = [
   "npm run cli -- live <fiber-invoice>",
   "npm run cli -- trace list",
   "npm run cli -- replay <traceId>",
+  "npm run cli -- verify <failed-live-trace-id> <fresh-invoice>",
   "npm run cli -- report <traceId> --format markdown"
 ];
 
@@ -110,7 +111,8 @@ export default function DocsPage() {
         <ul className="mt-3 space-y-2 text-sm text-gray-700">
           <li>Run your Fiber node separately and keep its JSON-RPC endpoint private.</li>
           <li>Use valid invoices, connected peers, open channels, and sufficient liquidity.</li>
-          <li>Replay-to-Fix is analytical for live traces, so it does not automatically mutate channels or move funds.</li>
+          <li>Replay-to-Fix accepts sandbox traces only; it never presents simulated outcomes as live FNN results.</li>
+          <li>Live Verification links a corrected, server-enforced FNN dry-run when a receiver or fresh invoice is available.</li>
           <li>Use the Live Fiber RPC panel for FNN-backed checks and sandbox scenarios for synthetic demos.</li>
         </ul>
       </section>
@@ -121,6 +123,11 @@ export default function DocsPage() {
           Reports include trace timelines, failure fingerprints, replay evidence, and recommended fixes. Markdown and JSON
           exports can be generated from each trace detail page or through the API.
         </p>
+        <p className="mt-3 leading-7 text-gray-700">
+          The repository proof bundle is a real local Fiber testnet live send from Node1 (sender) to Node2 (receiver), captured on
+          2026-07-04. The hosted deployment currently uses the Node1 environment, but its current pubkey differs from the
+          historical capture.
+        </p>
       </section>
 
       <section className="mt-6 rounded-lg border border-line bg-white p-5 shadow-sm">
@@ -130,6 +137,7 @@ export default function DocsPage() {
           <li>Fiber RPC health checks, invoice dry-runs, and live-send traces when enabled.</li>
           <li>Failure diagnosis with fingerprints, likely causes, and suggested fixes.</li>
           <li>Replay-to-Fix recommendations for finding the smallest successful change.</li>
+          <li>Linked Live Verification dry-runs for failed Fiber traces when a receiver is available.</li>
           <li>Markdown and JSON report exports for sharing trace evidence.</li>
           <li>Dashboard, API, CLI, and SDK surfaces for integrating payment diagnostics.</li>
         </ul>
@@ -150,6 +158,7 @@ function getApiExamples(apiBaseUrl: string): Array<[string, string]> {
       `curl -X POST ${apiBaseUrl}/api/traces -H 'content-type: application/json' -H "x-api-key: $FIBERTRACEBOX_API_KEY" -d '{"invoice":"<fiber-invoice>","dryRun":true}'`
     ],
     ["Replay trace", `curl -X POST ${apiBaseUrl}/api/traces/<traceId>/replay -H "x-api-key: $FIBERTRACEBOX_API_KEY"`],
+    ["Verify live fix", `curl -X POST ${apiBaseUrl}/api/traces/<traceId>/verify -H 'content-type: application/json' -H "x-api-key: $FIBERTRACEBOX_API_KEY" -d '{"invoice":"<fresh-invoice>"}'`],
     ["Markdown report", `curl ${apiBaseUrl}/api/traces/<traceId>/report?format=markdown`]
   ];
 }

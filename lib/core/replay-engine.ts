@@ -26,6 +26,9 @@ export function runReplayStrategy(trace: PaymentTrace, scenario: ReplayStrategy)
 }
 
 export function runReplayToFix(trace: PaymentTrace): ReplayResult[] {
+  if (trace.mode !== "sandbox") {
+    return [];
+  }
   const strategies = listReplayStrategiesForTrace(trace);
   const results = strategies.map((strategy) => runReplayStrategy(trace, strategy));
   const recommended = chooseRecommendedForTrace(trace, results);
@@ -37,6 +40,9 @@ export function runReplayToFix(trace: PaymentTrace): ReplayResult[] {
 }
 
 export function listReplayStrategiesForTrace(trace: PaymentTrace): ReplayStrategy[] {
+  if (trace.mode !== "sandbox") {
+    return [];
+  }
   const diagnosis = diagnoseTrace(trace);
   return strategiesForTrace(trace, diagnosis?.replayStrategies);
 }

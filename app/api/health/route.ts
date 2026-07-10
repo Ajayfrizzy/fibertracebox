@@ -23,10 +23,7 @@ export async function GET() {
               probe: {
                 ok: probe.ok,
                 error: probe.error,
-                pubkey: probe.nodeInfo?.pubkey,
                 version: probe.nodeInfo?.version,
-                nodeName: probe.nodeInfo?.node_name,
-                addresses: probe.nodeInfo?.addresses,
                 channelCount: probe.channelCount
               }
             }

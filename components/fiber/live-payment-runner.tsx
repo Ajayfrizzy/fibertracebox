@@ -62,7 +62,6 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
       }
 
       router.push(`/dashboard/traces/${payload.trace.id}`);
-      router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Live Fiber payment failed");
     } finally {

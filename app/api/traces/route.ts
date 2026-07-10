@@ -4,12 +4,14 @@ import { getDiagnosis, listTraces, saveDiagnosis, saveTrace } from "@/lib/api/re
 import { jsonError, jsonOk } from "@/lib/api/http";
 import { assertWriteAccess } from "@/lib/api/security";
 import { parsePaymentAttemptInput } from "@/lib/api/validation";
+import { hasApiKeyAccess } from "@/lib/api/security";
+import { toPublicTraceSummary } from "@/lib/api/public-trace";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const traces = await listTraces();
     return jsonOk(
-      traces.map((trace) => ({
+      traces.map((trace) => hasApiKeyAccess(request) ? ({
         id: trace.id,
         status: trace.status,
         amount: trace.amount,
@@ -18,8 +20,9 @@ export async function GET() {
         latencyMs: trace.latencyMs,
         createdAt: trace.createdAt,
         senderNode: trace.senderNode,
-        receiverNode: trace.receiverNode
-      }))
+        receiverNode: trace.receiverNode,
+        mode: trace.mode
+      }) : toPublicTraceSummary(trace))
     );
   } catch (error) {
     return jsonError(error);

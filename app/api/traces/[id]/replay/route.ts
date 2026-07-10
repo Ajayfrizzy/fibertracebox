@@ -6,18 +6,26 @@ import { parseTraceId } from "@/lib/api/validation";
 import type { ReplayResponse } from "@/lib/types/api";
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function POST(request: Request, context: RouteContext) {
   try {
     assertWriteAccess(request, "traces:replay");
-    const traceId = parseTraceId(context.params.id);
+    const { id } = await context.params;
+    const traceId = parseTraceId(id);
     const trace = await getTrace(traceId);
     if (!trace) {
       throw publicApiError("Trace not found", 404);
+    }
+
+    if (trace.mode === "fiber-rpc") {
+      throw publicApiError(
+        "Replay-to-Fix is unavailable for live Fiber traces; use the captured evidence as an operator diagnosis",
+        409
+      );
     }
 
     if (trace.status !== "failed" && trace.status !== "replayed") {

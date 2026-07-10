@@ -12,7 +12,8 @@
     "build:cli": "tsc -p tsconfig.cli.json && chmod +x dist-cli/cli/index.js",
     "start": "next start",
     "test": "vitest run",
-    "lint": "next lint",
+    "test:e2e": "playwright test",
+    "lint": "eslint . --max-warnings=0",
     "cli": "npm run build:cli --silent && node dist-cli/cli/index.js",
     "demo": "tsx cli/index.ts scenario run route-capacity",
     "demo:judge": "npm run cli -- judge-demo"
@@ -21,27 +22,33 @@
     "@supabase/supabase-js": "^2.45.4",
     "commander": "^12.1.0",
     "lucide-react": "^0.468.0",
-    "next": "^14.2.5",
+    "next": "^15.5.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@testing-library/react": "^15.0.7",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.5",
+    "eslint-config-next": "^15.5.16",
     "jsdom": "^24.1.1",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.3",
-    "vitest": "^2.0.4"
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.10"
+    }
   }
 }

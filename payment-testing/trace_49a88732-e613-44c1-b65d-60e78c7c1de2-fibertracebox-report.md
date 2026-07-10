@@ -62,4 +62,4 @@ Confidence: not applicable
 
 ## Mode Disclosure
 
-Fiber RPC mode: live FNN evidence is captured from node, channel, graph, invoice, and payment RPC calls. Replay-to-Fix remains analytical for live traces because changing live route conditions can move funds or mutate channels.
+Fiber RPC mode: live FNN evidence is captured from node, channel, graph, invoice, and payment RPC calls. Replay-to-Fix is limited to sandbox traces. Live Verification uses a separate server-enforced FNN dry-run when a receiver is available; this archived settlement report does not claim a post-fix verification run.

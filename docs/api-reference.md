@@ -26,8 +26,9 @@ Lists traces with ID, status, amount, asset, fingerprint, latency, sender, recei
 
 Returns the full trace with lifecycle events, diagnosis, replay results, and report status.
 
-For Fiber RPC traces, lifecycle event metadata may include live FNN evidence such as node pubkey, version, payment hash,
-channel snapshots, graph availability, payment status, and invoice status when available.
+Authenticated Fiber RPC responses may include live FNN evidence such as node pubkey, version, payment hash, channel snapshots,
+graph availability, payment status, and invoice status. Unauthenticated public responses redact sensitive live identifiers,
+balances, payment hashes, and raw RPC data.
 
 ## `POST /api/traces/:id/diagnose`
 
@@ -37,15 +38,33 @@ Requires write access.
 
 ## `POST /api/traces/:id/replay`
 
-Runs Replay-to-Fix strategies and marks the recommended smallest fix.
+Runs Replay-to-Fix strategies and marks the recommended smallest fix. This endpoint accepts sandbox traces only; it rejects
+Fiber RPC traces because simulated strategies are not live FNN results.
 
 Requires write access.
+
+## `POST /api/traces/:id/verify`
+
+Verifies an operator change for a failed Fiber RPC trace. It requires an API key and Fiber RPC live mode. The server forces
+`dry_run: true`, creates a separate trace from the actual FNN response, and links it to the original failure.
+
+```json
+{
+  "invoice": "<fresh-or-corrected-fiber-invoice>",
+  "amount": 100000000,
+  "feeLimit": 200000
+}
+```
+
+Possible outcomes are `verified`, `still_failing`, `changed_failure`, and `inconclusive`. `verified` means the dry-run cleared the
+failure fingerprint; it does not claim final payment settlement.
 
 ## `GET /api/traces/:id/report`
 
 Returns both Markdown and JSON report output. Use `?format=markdown` or `?format=json` for a single representation.
 
-Requires write access because report generation persists report output.
+Sandbox reports are publicly available only when public sandbox mode is enabled. Complete Fiber RPC reports require API-key
+access. Public report generation does not persist output; authenticated report generation may persist it.
 
 Fiber RPC reports include a Live Fiber Evidence section when trace metadata contains FNN node, payment, channel, or graph
 evidence.
@@ -56,9 +75,8 @@ Lists deterministic sandbox scenarios.
 
 ## `POST /api/scenarios/run`
 
-Runs a deterministic scenario:
-
-Requires write access.
+Runs a deterministic scenario. It requires write access unless `FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX=true` explicitly enables the
+rate-limited public hackathon demo.
 
 ```json
 {

@@ -17,7 +17,8 @@ export type FailureFingerprint =
   | "PAYMENT_AMOUNT_INVALID"
   | "LIQUIDITY_IMBALANCE"
   | "RETRY_PATH_UNAVAILABLE"
-  | "PEER_OFFLINE_ROUTE_UNAVAILABLE";
+  | "PEER_OFFLINE_ROUTE_UNAVAILABLE"
+  | "UNKNOWN_FIBER_RPC_FAILURE";
 
 export type ReplayStrategy =
   | "same_conditions"
@@ -97,6 +98,17 @@ export interface PaymentTrace {
   replayResults: ReplayResult[];
 }
 
+export type LiveVerificationOutcome = "verified" | "still_failing" | "changed_failure" | "inconclusive";
+
+export interface LiveVerificationResult {
+  originalTraceId: string;
+  verificationTrace: PaymentTrace;
+  outcome: LiveVerificationOutcome;
+  summary: string;
+  originalFingerprint?: FailureFingerprint;
+  verificationFingerprint?: FailureFingerprint;
+}
+
 export interface Diagnosis {
   traceId?: string;
   fingerprint: FailureFingerprint;
@@ -137,6 +149,13 @@ export interface TraceReport {
     smallestFix?: ReplayResult;
     recommendation?: ReplayRecommendation;
     liveEvidence?: unknown;
+    liveVerifications: Array<{
+      verificationTraceId: string;
+      outcome: LiveVerificationOutcome;
+      summary: string;
+      originalFingerprint?: FailureFingerprint;
+      verificationFingerprint?: FailureFingerprint;
+    }>;
     evidenceProvenance: {
       traceSource: PaymentMode;
       replayMode: string;

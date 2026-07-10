@@ -1,5 +1,4 @@
 import { timingSafeEqual } from "node:crypto";
-import { DASHBOARD_WRITE_COOKIE } from "@/lib/api/auth-constants";
 import { publicApiError } from "@/lib/api/http";
 
 interface RateLimitEntry {
@@ -14,6 +13,20 @@ export function assertWriteAccess(request: Request, scope: string) {
   enforceApiKey(request);
 }
 
+export function assertSandboxDemoAccess(request: Request) {
+  enforceRateLimit(request, "sandbox:demo");
+  if (process.env.FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX === "true") {
+    return;
+  }
+  enforceApiKey(request);
+}
+
+export function hasApiKeyAccess(request: Request): boolean {
+  const configuredKey = process.env.FIBERTRACEBOX_API_KEY?.trim();
+  const providedKey = getProvidedApiKey(request);
+  return Boolean(configuredKey && providedKey && safeEqual(providedKey, configuredKey));
+}
+
 function enforceApiKey(request: Request) {
   const configuredKey = process.env.FIBERTRACEBOX_API_KEY?.trim();
   const requireApiKey = process.env.NODE_ENV === "production" || process.env.FIBERTRACEBOX_REQUIRE_API_KEY === "true";
@@ -25,29 +38,10 @@ function enforceApiKey(request: Request) {
     return;
   }
 
-  if (hasDashboardWriteCookie(request, configuredKey)) {
-    return;
-  }
-
   const providedKey = getProvidedApiKey(request);
   if (!providedKey || !safeEqual(providedKey, configuredKey)) {
     throw publicApiError("Unauthorized", 401);
   }
-}
-
-function hasDashboardWriteCookie(request: Request, configuredKey: string): boolean {
-  const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) {
-    return false;
-  }
-
-  const value = cookieHeader
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith(`${DASHBOARD_WRITE_COOKIE}=`))
-    ?.slice(DASHBOARD_WRITE_COOKIE.length + 1);
-
-  return Boolean(value && safeEqual(decodeURIComponent(value), configuredKey));
 }
 
 function enforceRateLimit(request: Request, scope: string) {
@@ -83,11 +77,12 @@ function getProvidedApiKey(request: Request): string | undefined {
 }
 
 function getClientAddress(request: Request): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    "local"
-  );
+  // Only trust forwarding headers when the deployment explicitly sits behind a
+  // proxy that overwrites them. Otherwise clients could rotate spoofed values.
+  if (process.env.FIBERTRACEBOX_TRUST_PROXY === "true") {
+    return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip")?.trim() || "proxy";
+  }
+  return "direct";
 }
 
 function readPositiveInteger(value: string | undefined, fallback: number): number {

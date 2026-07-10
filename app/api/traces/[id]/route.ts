@@ -3,16 +3,19 @@ import { getDiagnosis, getTrace } from "@/lib/api/repository";
 import { jsonError, jsonOk, publicApiError } from "@/lib/api/http";
 import { parseTraceId } from "@/lib/api/validation";
 import type { TraceDetailResponse } from "@/lib/types/api";
+import { hasApiKeyAccess } from "@/lib/api/security";
+import { toPublicTrace } from "@/lib/api/public-trace";
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
-    const traceId = parseTraceId(context.params.id);
+    const { id } = await context.params;
+    const traceId = parseTraceId(id);
     const trace = await getTrace(traceId);
     if (!trace) {
       throw publicApiError("Trace not found", 404);
@@ -24,7 +27,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const response: TraceDetailResponse = {
-      trace,
+      trace: hasApiKeyAccess(request) ? trace : toPublicTrace(trace),
       diagnosis,
       reportStatus: trace.status === "success" ? "not_applicable" : "ready"
     };

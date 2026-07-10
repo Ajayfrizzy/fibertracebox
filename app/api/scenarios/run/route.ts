@@ -3,13 +3,13 @@ import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { recommendSmallestFix, runReplayToFix } from "@/lib/core/replay-engine";
 import { saveDiagnosis, saveReplayResults, saveTrace } from "@/lib/api/repository";
 import { jsonError, jsonOk } from "@/lib/api/http";
-import { assertWriteAccess } from "@/lib/api/security";
+import { assertSandboxDemoAccess } from "@/lib/api/security";
 import { parseScenarioRunInput } from "@/lib/api/validation";
 import type { ScenarioRunResponse } from "@/lib/types/api";
 
 export async function POST(request: Request) {
   try {
-    assertWriteAccess(request, "scenarios:run");
+    assertSandboxDemoAccess(request);
     const { scenario, replay } = await parseScenarioRunInput(request);
     const trace = await sandboxAdapter.runPaymentAttempt({ scenario });
     await saveTrace(trace);

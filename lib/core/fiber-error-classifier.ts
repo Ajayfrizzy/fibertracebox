@@ -44,7 +44,7 @@ export function classifyFiberRpcFailure(message: string, data?: unknown): FiberF
     };
   }
 
-  if (hasAny(searchable, ["route not found", "no route", "cannot find route", "path not found", "unable to find path"])) {
+  if (hasAny(searchable, ["route not found", "no route", "cannot find route", "path not found", "no path found", "unable to find path"])) {
     return { fingerprint: "ROUTE_NOT_FOUND", reason: "FNN reported that no route/path could be found." };
   }
 
@@ -106,7 +106,10 @@ export function classifyFiberRpcFailure(message: string, data?: unknown): FiberF
     return { fingerprint: "INVOICE_INVALID", reason: "FNN returned an invalid parameter/session error." };
   }
 
-  return { fingerprint: "ROUTE_NOT_FOUND", reason: "FNN returned an unmapped payment failure; route discovery is the safest default." };
+  return {
+    fingerprint: "UNKNOWN_FIBER_RPC_FAILURE",
+    reason: "FNN returned a payment failure that does not match the verified classifier corpus."
+  };
 }
 
 function hasAny(value: string, needles: string[]) {

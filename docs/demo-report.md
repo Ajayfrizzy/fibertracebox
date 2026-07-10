@@ -38,7 +38,9 @@ The replay ladder for route capacity is:
 
 ## Live Fiber Evidence
 
-The live proof bundle in `payment-testing/` records a real two-node Fiber payment.
+The live proof bundle in `payment-testing/` records a real live-send payment on Fiber testnet between two locally operated FNN
+processes. Node1 was the sender and Node2 was the receiver/invoice creator. The author created and funded the channels. Embedded
+FNN timestamps place the invoice and payment on `2026-07-04` at approximately `14:56 UTC`.
 
 | Evidence | Value |
 | --- | --- |
@@ -70,8 +72,10 @@ The failed-transaction corpus in `failed-transactions/` contains raw FNN JSON-RP
 - The live evidence includes node pubkeys, Fiber version, channel readiness, invoice amount, payment hash, final sender status,
   and final receiver invoice status.
 - The exported report gives operators a portable artifact for debugging and handoff.
-- Live replay is intentionally analytical. FiberTracebox captures real FNN evidence for live traces, while sandbox traces are
-  the safe replay laboratory for alternate route and liquidity conditions.
+- Replay-to-Fix runs only in the deterministic sandbox. Live Verification can link a later, server-enforced FNN dry-run after an
+  operator applies a fix; no completed Live Verification capture is claimed because Node2 is not currently running.
+- The hosted deployment currently uses the Node1 environment only. Its reported pubkey differs from the historical Node1
+  capture, so Node2 and settlement evidence comes strictly from the historical local proof bundle.
 
 ## Judge Takeaway
 
@@ -93,3 +97,6 @@ FiberTracebox turns scattered Fiber node evidence into a debugging workflow:
 6. Open the live Fiber trace.
 7. Show FNN pubkeys, payment hash, channel evidence, `Success`, and `Paid` status.
 8. Close with: sandbox gives reproducible diagnostics; live mode proves real Fiber node integration.
+
+The captured `Success` and `Paid` values prove the historical live settlement. Do not present the currently hosted single-node
+connection as a currently running two-node environment.

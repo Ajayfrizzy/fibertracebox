@@ -17,8 +17,9 @@ FiberTracebox is structured as reusable diagnostics infrastructure:
 2. The selected `PaymentDataAdapter` returns a `PaymentTrace`.
 3. The diagnosis engine classifies the failure fingerprint.
 4. Server-side repository code persists traces and related rows.
-5. Replay-to-Fix runs deterministic replay strategies against the trace.
-6. Reports are generated as Markdown and JSON.
+5. Replay-to-Fix runs deterministic replay strategies for sandbox traces only.
+6. For a failed Fiber RPC trace, Live Verification can execute and link a new server-enforced FNN dry-run after an operator fix.
+7. Reports are generated as Markdown and JSON, including linked verification evidence when present.
 
 ## Adapter Boundaries
 
@@ -30,6 +31,9 @@ The Fiber RPC adapter talks to an FNN JSON-RPC endpoint. It records `node_info`,
 
 Replay-to-Fix is intentionally split by mode. Sandbox traces are replayed under changed conditions. Live Fiber traces preserve
 real node evidence and do not mutate routes, balances, channels, or payment sessions.
+
+Live Verification is the real-node follow-up path. It requires API-key authorization, forces `dry_run: true`, creates a separate
+trace from the actual FNN response, and links that trace to the original failure.
 
 ## Persistence
 

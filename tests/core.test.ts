@@ -5,9 +5,24 @@ import { classifyFiberRpcFailure } from "@/lib/core/fiber-error-classifier";
 import { generateReport } from "@/lib/core/report-generator";
 import { createReplayRecommendation, recommendSmallestFix, runReplayToFix } from "@/lib/core/replay-engine";
 import { formatTraceCreatedAt } from "@/lib/core/time-format";
+import { evaluateLiveVerification } from "@/lib/core/live-verification";
 import type { FailureFingerprint, PaymentTrace } from "@/lib/types/domain";
 
 describe("FiberTracebox core", () => {
+  it("classifies linked live verification outcomes from actual trace results", () => {
+    const original: PaymentTrace = {
+      id: "trace_original", createdAt: "2026-07-10T00:00:00.000Z", mode: "fiber-rpc", senderNode: "sender",
+      receiverNode: "receiver", amount: 100, asset: "CKB", status: "failed", latencyMs: 10,
+      failureFingerprint: "ROUTE_CAPACITY_INSUFFICIENT", events: [], replayResults: []
+    };
+    const verified = { ...original, id: "trace_verified", status: "pending" as const, failureFingerprint: undefined };
+    const sameFailure = { ...original, id: "trace_same" };
+    const changedFailure = { ...original, id: "trace_changed", failureFingerprint: "FEE_LIMIT_TOO_LOW" as const };
+
+    expect(evaluateLiveVerification(original, verified).outcome).toBe("verified");
+    expect(evaluateLiveVerification(original, sameFailure).outcome).toBe("still_failing");
+    expect(evaluateLiveVerification(original, changedFailure).outcome).toBe("changed_failure");
+  });
   it("creates successful and failed sandbox traces", async () => {
     const adapter = new SandboxAdapter();
     const success = await adapter.runPaymentAttempt({ scenario: "successful-payment" });
@@ -97,7 +112,7 @@ describe("FiberTracebox core", () => {
     expect(recommendSmallestFix(results)?.scenario).toBe("restored_peer");
   });
 
-  it("runs route-unavailable replay scenarios for live peer-offline evidence", () => {
+  it("does not claim replay outcomes for live peer-offline evidence", () => {
     const trace: PaymentTrace = {
       id: "trace_peer_route_unavailable",
       createdAt: "2026-07-07T00:00:00.000Z",
@@ -114,13 +129,8 @@ describe("FiberTracebox core", () => {
       replayResults: []
     };
     const results = runReplayToFix(trace);
-    const byScenario = Object.fromEntries(results.map((result) => [result.scenario, result]));
-
-    expect(byScenario.same_conditions.result).toBe("failed");
-    expect(byScenario.restored_peer.result).toBe("success");
-    expect(byScenario.retry_after_delay.result).toBe("success");
-    expect(byScenario.alternate_route.result).toBe("success");
-    expect(recommendSmallestFix(results)?.scenario).toBe("restored_peer");
+    expect(results).toEqual([]);
+    expect(recommendSmallestFix(results)).toBeUndefined();
   });
 
   it("runs timeout replay scenarios", async () => {
@@ -304,7 +314,7 @@ describe("FiberTracebox core", () => {
     const cancelledTrace = {
       id: "trace_cancelled",
       createdAt: "2026-07-07T00:00:00.000Z",
-      mode: "fiber-rpc" as const,
+      mode: "sandbox" as const,
       senderNode: "sender",
       receiverNode: "receiver",
       amount: 1000,

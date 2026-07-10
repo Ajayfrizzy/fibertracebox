@@ -11,15 +11,16 @@ import { formatTraceAmount } from "@/lib/core/amount-format";
 import { getDatabaseMode } from "@/lib/api/repository";
 import { getFiberRpcStatus, getPaymentAdapter } from "@/lib/adapters";
 import { probeFiberRpc } from "@/lib/adapters/fiber-rpc-adapter";
+import { toPublicTrace } from "@/lib/api/public-trace";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const traces = await listTraces();
+  const traces = (await listTraces()).map(toPublicTrace);
   const stats = calculateStats(traces);
   const recentTraces = traces.slice(0, 6);
   const failedQueue = traces.filter((trace) => trace.status === "failed").slice(0, 4);
-  const replayQueue = traces.filter((trace) => trace.status === "failed" || trace.status === "replayed").slice(0, 4);
+  const replayQueue = traces.filter((trace) => trace.mode === "sandbox" && (trace.status === "failed" || trace.status === "replayed")).slice(0, 4);
   const databaseMode = getDatabaseMode();
   const adapter = getPaymentAdapter();
   const fiberRpc = getFiberRpcStatus();

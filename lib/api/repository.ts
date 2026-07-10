@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createSupabaseServerClient, hasSupabaseServerConfig } from "@/lib/supabase/server";
 import type { Diagnosis, PaymentTrace, ReplayResult, TraceEvent } from "@/lib/types/domain";
@@ -11,6 +11,7 @@ const memory = {
 
 const localStorePath = path.join(process.cwd(), ".next", "cache", "fibertracebox-memory-store.json");
 let localStoreLoaded = false;
+let localStoreWrite = Promise.resolve();
 
 interface LocalStore {
   traces: PaymentTrace[];
@@ -330,8 +331,15 @@ async function persistLocalStore() {
     reports: Array.from(memory.reports.values())
   };
 
-  await mkdir(path.dirname(localStorePath), { recursive: true });
-  await writeFile(localStorePath, JSON.stringify(store, null, 2));
+  const write = async () => {
+    await mkdir(path.dirname(localStorePath), { recursive: true });
+    const temporaryPath = `${localStorePath}.${process.pid}.tmp`;
+    await writeFile(temporaryPath, JSON.stringify(store, null, 2));
+    await rename(temporaryPath, localStorePath);
+  };
+
+  localStoreWrite = localStoreWrite.then(write, write);
+  await localStoreWrite;
 }
 
 function isMissingFileError(error: unknown) {

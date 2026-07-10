@@ -8,22 +8,26 @@ import { LiveFiberEvidence } from "@/components/traces/live-fiber-evidence";
 import { ReplayResults } from "@/components/replay/replay-results";
 import { ReplayActionButton } from "@/components/replay/replay-actions";
 import { ReportActions } from "@/components/reports/report-actions";
+import { LiveVerification } from "@/components/fiber/live-verification";
 import { formatRawTraceAmount, formatTraceAmount } from "@/lib/core/amount-format";
 import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { generateReport } from "@/lib/core/report-generator";
 import { getDiagnosis, getTrace, saveDiagnosis } from "@/lib/api/repository";
+import { toPublicTrace } from "@/lib/api/public-trace";
 
 interface TraceDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function TraceDetailPage({ params }: TraceDetailPageProps) {
-  const trace = await getTrace(params.id);
-  if (!trace) {
+  const { id } = await params;
+  const storedTrace = await getTrace(id);
+  if (!storedTrace) {
     notFound();
   }
+  const trace = toPublicTrace(storedTrace);
 
   let diagnosis = trace.status === "success" ? undefined : await getDiagnosis(trace.id);
   if (!diagnosis && trace.status !== "success") {
@@ -42,14 +46,16 @@ export default async function TraceDetailPage({ params }: TraceDetailPageProps) 
           Back to traces
         </Link>
         <div className="flex flex-wrap gap-2">
-          <ReplayActionButton traceId={trace.id} />
-          <a
-            href={`/api/traces/${trace.id}/report?format=markdown`}
-            className="inline-flex items-center gap-2 rounded-md border border-line bg-white px-4 py-2 text-sm font-semibold text-ink shadow-sm"
-          >
-            <FileText size={16} />
-            Export Report
-          </a>
+          {trace.mode === "sandbox" && <ReplayActionButton traceId={trace.id} />}
+          {trace.mode === "sandbox" && (
+            <a
+              href={`/api/traces/${trace.id}/report?format=markdown`}
+              className="inline-flex items-center gap-2 rounded-md border border-line bg-white px-4 py-2 text-sm font-semibold text-ink shadow-sm"
+            >
+              <FileText size={16} />
+              Export Report
+            </a>
+          )}
         </div>
       </div>
 
@@ -92,6 +98,10 @@ export default async function TraceDetailPage({ params }: TraceDetailPageProps) 
         <LiveFiberEvidence trace={trace} />
       </div>
 
+      {trace.mode === "fiber-rpc" && trace.status === "failed" && (
+        <div className="mt-6"><LiveVerification traceId={trace.id} events={trace.events} /></div>
+      )}
+
       <section className="mt-6 rounded-lg border border-line bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -105,13 +115,13 @@ export default async function TraceDetailPage({ params }: TraceDetailPageProps) 
         </pre>
       </section>
 
-      <a
+      {trace.mode === "sandbox" && <a
         href={`/api/traces/${trace.id}/report?format=json`}
         className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-ckb hover:underline"
       >
         <Download size={16} />
         Open JSON report
-      </a>
+      </a>}
     </div>
   );
 }

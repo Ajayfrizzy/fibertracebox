@@ -5,15 +5,16 @@ import { assertWriteAccess } from "@/lib/api/security";
 import { parseTraceId } from "@/lib/api/validation";
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function POST(request: Request, context: RouteContext) {
   try {
     assertWriteAccess(request, "traces:diagnose");
-    const traceId = parseTraceId(context.params.id);
+    const { id } = await context.params;
+    const traceId = parseTraceId(id);
     const trace = await getTrace(traceId);
     if (!trace) {
       throw publicApiError("Trace not found", 404);

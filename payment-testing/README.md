@@ -1,12 +1,25 @@
 # Live Fiber Payment Evidence
 
-This folder contains the raw two-node Fiber evidence used for the FiberTracebox hackathon demo.
+This folder contains raw evidence from a real two-node Fiber testnet payment performed locally before the hackathon deployment.
 
 ## Purpose
 
 The files prove that FiberTracebox was tested against real local Fiber Network Nodes, not only sandbox data. The live run uses
 a receiver-generated Fiber invoice, sender-side payment execution, sender-side final payment confirmation, receiver-side invoice
 confirmation, and a FiberTracebox trace/report.
+
+## Capture Provenance
+
+| Field | Value |
+| --- | --- |
+| Network | Fiber testnet |
+| Environment | Two FNN processes operated locally by the project author |
+| Node1 role | Sender; its environment was later used for the single-node hosted deployment |
+| Node2 role | Receiver and invoice creator; not currently hosted |
+| Channel ownership | Channels were created and funded by the project author |
+| Payment mode | Real live send, not a dry-run |
+| Invoice timestamp | `2026-07-04T14:56:28.417Z` from invoice field `0x19f2da18701` |
+| Payment timestamp | `2026-07-04T14:56:53.403Z` from payment field `0x19f2da1e89b` |
 
 ## Evidence Summary
 
@@ -38,11 +51,13 @@ confirmation, and a FiberTracebox trace/report.
 
 ## Verification Notes
 
-- Both nodes report Fiber `0.9.0-rc5`.
+- Node1 (sender) and Node2 (receiver) both report Fiber `0.9.0-rc5`.
 - Both nodes report multiple public `ChannelReady` channels.
 - The payment hash is the same in the fresh invoice, sender payment result, sender final status, and receiver invoice status.
 - `send_payment` returning `Created` is not final settlement proof. The final proof is `get_payment` returning `Success` and
   `get_invoice` returning `Paid`.
+- This is historical captured evidence. The current hosted FiberTracebox deployment uses the Node1 environment only, but its
+  currently reported pubkey differs from the captured Node1 pubkey, so it is not presented as the same cryptographic identity.
 
 ## Safety Notes
 

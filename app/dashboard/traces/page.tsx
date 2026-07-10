@@ -1,11 +1,12 @@
 import { Route } from "lucide-react";
 import { TraceTable } from "@/components/traces/trace-table";
 import { listTraces } from "@/lib/api/repository";
+import { toPublicTrace } from "@/lib/api/public-trace";
 
 export const dynamic = "force-dynamic";
 
 export default async function TracesPage() {
-  const traces = await listTraces();
+  const traces = (await listTraces()).map(toPublicTrace);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

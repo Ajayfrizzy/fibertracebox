@@ -31,3 +31,7 @@ Sandbox scenarios are deterministic so judges and operators can reproduce the sa
 then proves the integration path against real FNN nodes: invoice parsing, payment hash, payment status, channel snapshots,
 and report export. Use sandbox replay to explain the diagnostic method, then use the live evidence trace to show that the
 same trace/report surface works against actual Fiber infrastructure.
+
+The repository proof is a historical real live-send capture from two local Fiber testnet nodes: Node1 sender and Node2 receiver.
+The hosted deployment currently uses the Node1 environment only and reports a different pubkey from the historical capture. Live Verification is available when a receiver or fresh invoice source
+is reachable, but the submission does not claim a completed verification run after Node2 was stopped.

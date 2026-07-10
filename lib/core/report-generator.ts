@@ -11,6 +11,11 @@ export function generateReport(trace: PaymentTrace): TraceReport {
   const suggestedNextActions =
     trace.status === "success" && !diagnosis
       ? ["No failure action is required. Archive this trace/report as live payment evidence."]
+      : trace.mode === "fiber-rpc"
+        ? [
+            ...(diagnosis?.suggestedFixes ?? []),
+            "Apply the operator change on the test nodes, then run Live Verification with a fresh or corrected FNN dry-run."
+          ]
       : [
           ...(diagnosis?.suggestedFixes ?? []),
           recommendation?.primaryAction ??
@@ -20,10 +25,11 @@ export function generateReport(trace: PaymentTrace): TraceReport {
   const disclosure =
     trace.mode === "sandbox"
       ? "Sandbox mode: deterministic simulated Fiber payment conditions are used for repeatable diagnostics."
-      : "Fiber RPC mode: live FNN evidence is captured from node, channel, graph, invoice, and payment RPC calls. Replay-to-Fix remains analytical for live traces because changing live route conditions can move funds or mutate channels.";
+      : "Fiber RPC mode: live FNN evidence is captured from node, channel, graph, invoice, and payment RPC calls. Live Verification links a corrected FNN dry-run to the original failure without sending funds.";
   const rawAmount = formatRawTraceAmount(trace);
   const liveEvidence = extractLiveFiberEvidence(trace);
   const evidenceProvenance = buildEvidenceProvenance(trace, liveEvidence);
+  const liveVerifications = extractLiveVerifications(trace);
 
   const eventRows = trace.events
     .map((event) => `| ${event.timestampMs} | ${event.stage} | ${event.severity} | ${event.message} |`)
@@ -59,6 +65,8 @@ ${liveEvidence?.payment?.paymentHash ? `- Payment hash: ${liveEvidence.payment.p
 ${diagnosis ? diagnosis.explanation : "No failure diagnosis is required for this trace."}
 
 ${liveEvidenceSection}
+
+${renderLiveVerifications(liveVerifications)}
 
 ## Evidence Source
 
@@ -106,11 +114,38 @@ ${disclosure}
       smallestFix,
       recommendation,
       liveEvidence,
+      liveVerifications,
       evidenceProvenance,
       suggestedNextActions,
       disclosure
     }
   };
+}
+
+function extractLiveVerifications(trace: PaymentTrace): TraceReport["json"]["liveVerifications"] {
+  return trace.events.flatMap((event) => {
+    if (event.stage !== "live_verification") return [];
+    const verificationTraceId = event.metadata?.verificationTraceId;
+    const outcome = event.metadata?.verificationOutcome;
+    if (typeof verificationTraceId !== "string" || !isVerificationOutcome(outcome)) return [];
+    return [{
+      verificationTraceId,
+      outcome,
+      summary: event.message,
+      originalFingerprint: typeof event.metadata?.originalFingerprint === "string" ? event.metadata.originalFingerprint as PaymentTrace["failureFingerprint"] : undefined,
+      verificationFingerprint: typeof event.metadata?.verificationFingerprint === "string" ? event.metadata.verificationFingerprint as PaymentTrace["failureFingerprint"] : undefined
+    }];
+  });
+}
+
+function renderLiveVerifications(verifications: TraceReport["json"]["liveVerifications"]) {
+  if (!verifications.length) return "";
+  const rows = verifications.map((item) => `| ${item.verificationTraceId} | ${item.outcome} | ${item.verificationFingerprint ?? "none"} | ${item.summary} |`).join("\n");
+  return `## Live Verification\n\n| verification trace | outcome | resulting fingerprint | evidence summary |\n| --- | --- | --- | --- |\n${rows}`;
+}
+
+function isVerificationOutcome(value: unknown): value is "verified" | "still_failing" | "changed_failure" | "inconclusive" {
+  return value === "verified" || value === "still_failing" || value === "changed_failure" || value === "inconclusive";
 }
 
 function renderLiveEvidenceMarkdown(liveEvidence: NonNullable<ReturnType<typeof extractLiveFiberEvidence>>) {
@@ -202,7 +237,7 @@ function buildEvidenceProvenance(
           liveEvidence?.payment?.dryRun || dryRunRequested
             ? "Dry-run mode requests route/payment checks without intentionally sending a new live payment."
             : "Live send mode was enabled for this trace.",
-          "Replay-to-Fix remains analytical for live traces because alternate live attempts can move funds or mutate channels."
+          "Live Verification uses a new server-enforced dry-run and never represents sandbox replay as live evidence."
         ];
 
   return {

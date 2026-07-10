@@ -58,6 +58,17 @@ export async function parsePaymentAttemptInput(request: Request): Promise<Paymen
   };
 }
 
+export async function parseLiveVerificationInput(request: Request): Promise<PaymentAttemptInput> {
+  const input = await parsePaymentAttemptInput(request);
+  if (input.scenario) {
+    throw publicApiError("Live verification requires an invoice or targetPubkey, not a sandbox scenario", 400);
+  }
+  if (!input.invoice && !input.targetPubkey) {
+    throw publicApiError("Live verification requires an invoice or targetPubkey", 400);
+  }
+  return { ...input, dryRun: true };
+}
+
 export async function parseScenarioRunInput(request: Request): Promise<{ scenario: ScenarioName; replay: boolean }> {
   const body = await parseJsonBody(request, scenarioRunBodySchema);
   return {

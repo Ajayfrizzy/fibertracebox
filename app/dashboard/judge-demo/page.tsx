@@ -3,6 +3,7 @@ import { CheckCircle2, ExternalLink, FileText, FlaskConical, Play, RadioTower, R
 import { ScenarioRunner } from "@/components/sandbox/scenario-runner";
 import { listTraces } from "@/lib/api/repository";
 import { scenarios } from "@/lib/core/scenarios";
+import { toPublicTrace } from "@/lib/api/public-trace";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +59,10 @@ const realFailureEvidence = [
 ];
 
 export default async function JudgeDemoPage() {
-  const traces = await listTraces();
-  const latestReplay = traces.find((trace) => trace.status === "replayed" && trace.failureFingerprint === "ROUTE_CAPACITY_INSUFFICIENT");
+  const traces = (await listTraces()).map(toPublicTrace);
+  const latestReplay = traces.find(
+    (trace) => trace.mode === "sandbox" && trace.status === "replayed" && trace.failureFingerprint === "ROUTE_CAPACITY_INSUFFICIENT"
+  );
   const latestLive = traces.find((trace) => trace.mode === "fiber-rpc");
 
   return (
@@ -146,7 +149,8 @@ export default async function JudgeDemoPage() {
           <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-ink">Live Fiber Proof Close</h2>
             <p className="mt-1 text-sm leading-6 text-gray-600">
-              The hosted dashboard can stay sandbox-safe while the repo proves FNN integration with captured two-node evidence.
+              The hosted adapter uses the Node1 deployment environment. The repo contains a historical real live-send testnet
+              capture from local Node1 (sender) and Node2 (receiver), plus failures captured from the same nodes.
             </p>
             <div className="mt-4 grid gap-3">
               {proofLinks.map((link) => (

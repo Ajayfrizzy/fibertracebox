@@ -63,6 +63,24 @@ intentional: changing live payment conditions can move funds, alter channel stat
 For live traces, the report should be read as operator evidence. For sandbox traces, the report should be read as replayed
 diagnosis and smallest-fix analysis.
 
+## Live Verification
+
+Failed Fiber RPC traces expose a Live Verification form. After applying the recommended change to test-node state, submit a fresh
+invoice or keysend target. The protected `POST /api/traces/:id/verify` endpoint forces `dry_run: true`, records a new FNN trace,
+and links both traces with one of four outcomes:
+
+- `verified`: no failure fingerprint returned; the route check passed, but settlement was not attempted.
+- `still_failing`: the same fingerprint returned.
+- `changed_failure`: FNN passed the original failure point and returned a different fingerprint.
+- `inconclusive`: the response did not provide enough evidence.
+
+Verification links are included in Markdown and JSON reports.
+
+The current hosted deployment uses the Node1 environment only, although its current pubkey differs from the historical Node1
+capture. The real Node1-to-Node2 settlement and failure bundles were captured
+earlier on Fiber testnet while both author-operated local nodes were running. Node2 is currently offline, so the submission does
+not claim a completed post-fix Live Verification run; that workflow is implemented and covered with mock FNN integration tests.
+
 Reports include an evidence-source section that names the trace source, replay mode, live mutation state, observed RPC
 methods, and safety notes. If a dry-run observes an existing successful payment session, the report labels it as existing
 session recovery rather than implying FiberTracebox sent a new live payment.
@@ -92,9 +110,19 @@ Hosted deployments should set `FIBERTRACEBOX_API_KEY`. Write endpoints accept th
 In production, write endpoints refuse to run without `FIBERTRACEBOX_API_KEY`. Local demos can opt into the same requirement with
 `FIBERTRACEBOX_REQUIRE_API_KEY=true`.
 
+The API key is never copied into a browser cookie. Set `FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX=true` only when judges should be able
+to run deterministic scenarios. This exception does not authorize Fiber RPC sends or complete live reports. Public live trace
+responses redact node/channel/payment identifiers, balances, and raw RPC error data.
+
 Rate limits are in-memory per app process and configurable with:
 
 - `FIBERTRACEBOX_RATE_LIMIT_MAX`
 - `FIBERTRACEBOX_RATE_LIMIT_WINDOW_MS`
 
 Use an external rate limiter such as Nginx, Redis, or the hosting platform's edge controls when running multiple app instances.
+Only set `FIBERTRACEBOX_TRUST_PROXY=true` when that proxy overwrites forwarding headers from clients.
+
+## Failure Classification Boundary
+
+Only verified message/data patterns receive a specific live fingerprint. Unmatched FNN errors use
+`UNKNOWN_FIBER_RPC_FAILURE` with low confidence. Add a sanitized real capture and classifier test before promoting a new pattern.

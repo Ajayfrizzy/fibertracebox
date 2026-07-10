@@ -1,6 +1,6 @@
 import type { PaymentTrace } from "@/lib/types/domain";
 
-const fiberCurrencies = new Set(["Fibb", "Fibt", "Fibd"]);
+const fiberCurrencies = new Set(["CKB", "Fibb", "Fibt", "Fibd"]);
 const shannonsPerCkb = 100_000_000;
 
 export function formatTraceAmount(trace: Pick<PaymentTrace, "amount" | "asset" | "mode">): string {

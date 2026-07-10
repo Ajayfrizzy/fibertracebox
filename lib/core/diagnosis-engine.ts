@@ -208,6 +208,14 @@ export const diagnosisCatalog: Record<FailureFingerprint, Omit<Diagnosis, "trace
     ],
     confidence: "medium",
     replayStrategies: ["same_conditions", "restored_peer", "retry_after_delay", "alternate_route"]
+  },
+  UNKNOWN_FIBER_RPC_FAILURE: {
+    title: "Unclassified Fiber RPC failure",
+    explanation: "FNN returned a failure that does not match the currently verified failure corpus.",
+    likelyCauses: ["The node returned a new error variant", "The failure lacks enough structured evidence for a reliable classification"],
+    suggestedFixes: ["Inspect the sanitized RPC error and node logs", "Add the verified error pattern to the classifier corpus before assigning a fingerprint"],
+    confidence: "low",
+    replayStrategies: []
   }
 };
 

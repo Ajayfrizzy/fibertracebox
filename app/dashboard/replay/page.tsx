@@ -14,15 +14,19 @@ import { getDiagnosis, getTrace, listTraces, saveDiagnosis } from "@/lib/api/rep
 export const dynamic = "force-dynamic";
 
 interface ReplayLabPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     trace?: string;
-  };
+  }>;
 }
 
 export default async function ReplayLabPage({ searchParams }: ReplayLabPageProps) {
+  const query = await searchParams;
   const traces = await listTraces();
-  const failedOrReplayed = traces.filter((trace) => trace.status === "failed" || trace.status === "replayed");
-  const requestedTrace = searchParams?.trace ? await getTrace(searchParams.trace) : null;
+  const failedOrReplayed = traces.filter(
+    (trace) => trace.mode === "sandbox" && (trace.status === "failed" || trace.status === "replayed")
+  );
+  const requested = query?.trace ? await getTrace(query.trace) : null;
+  const requestedTrace = requested?.mode === "sandbox" ? requested : null;
   const selected =
     requestedTrace ?? failedOrReplayed.find((trace) => trace.status === "replayed") ?? failedOrReplayed[0];
 

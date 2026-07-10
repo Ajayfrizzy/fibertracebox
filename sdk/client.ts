@@ -1,6 +1,7 @@
 import type {
   HealthResponse,
   ListScenariosResponse,
+  LiveVerificationResponse,
   ReplayResponse,
   ReportResponse,
   ScenarioRunResponse,
@@ -49,6 +50,10 @@ export class FiberTraceboxClient {
     return this.request(`/api/traces/${id}/replay`, {
       method: "POST"
     });
+  }
+
+  async verifyLiveTrace(id: string, input: PaymentAttemptInput): Promise<LiveVerificationResponse> {
+    return this.request(`/api/traces/${id}/verify`, { method: "POST", body: JSON.stringify(input) });
   }
 
   async getReport(id: string, format: "markdown" | "json" | "both" = "both"): Promise<ReportResponse | string | ReportResponse["json"]> {

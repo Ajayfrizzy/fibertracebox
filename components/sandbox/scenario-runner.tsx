@@ -33,7 +33,6 @@ export function ScenarioRunner({ scenarios }: ScenarioRunnerProps) {
         throw new Error(extractError(payload, "Scenario run failed"));
       }
       router.push(`/dashboard/traces/${payload.trace.id}`);
-      router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Scenario run failed");
     } finally {

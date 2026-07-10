@@ -12,6 +12,9 @@ export function recommendSmallestFix(results: ReplayResult[]): ReplayResult | un
 }
 
 export function createReplayRecommendation(trace: PaymentTrace, results: ReplayResult[]): ReplayRecommendation | undefined {
+  if (trace.mode !== "sandbox") {
+    return undefined;
+  }
   const successful = results.filter((result) => result.result === "success");
   if (!successful.length) {
     return undefined;

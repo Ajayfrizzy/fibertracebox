@@ -4,7 +4,10 @@ import { POST as tracesPost } from "@/app/api/traces/route";
 import { POST as scenarioPost } from "@/app/api/scenarios/run/route";
 import { GET as traceGet } from "@/app/api/traces/[id]/route";
 import { POST as replayPost } from "@/app/api/traces/[id]/replay/route";
+import { POST as verifyPost } from "@/app/api/traces/[id]/verify/route";
 import { extractLiveFiberEvidence } from "@/lib/core/live-fiber-evidence";
+import { getTrace, saveTrace } from "@/lib/api/repository";
+import type { PaymentTrace } from "@/lib/types/domain";
 
 describe("API routes", () => {
   afterEach(() => {
@@ -87,7 +90,7 @@ describe("API routes", () => {
     const response = await scenarioPost(request);
     const json = await response.json();
     const detailResponse = await traceGet(new Request(`http://localhost/api/traces/${json.trace.id}`), {
-      params: { id: json.trace.id }
+      params: Promise.resolve({ id: json.trace.id })
     });
     const detailJson = await detailResponse.json();
 
@@ -105,7 +108,7 @@ describe("API routes", () => {
     const scenarioJson = await scenarioResponse.json();
 
     const replayResponse = await replayPost(new Request("http://localhost/api/traces/id/replay", { method: "POST" }), {
-      params: { id: scenarioJson.trace.id }
+      params: Promise.resolve({ id: scenarioJson.trace.id })
     });
     const replayJson = await replayResponse.json();
 
@@ -123,12 +126,58 @@ describe("API routes", () => {
     const scenarioJson = await scenarioResponse.json();
 
     const replayResponse = await replayPost(new Request("http://localhost/api/traces/id/replay", { method: "POST" }), {
-      params: { id: scenarioJson.trace.id }
+      params: Promise.resolve({ id: scenarioJson.trace.id })
     });
     const replayJson = await replayResponse.json();
 
     expect(replayResponse.status).toBe(400);
     expect(replayJson.error).toBe("Replay-to-Fix only runs for failed traces");
+  });
+
+  it("forces live verification to dry-run and links real FNN evidence", async () => {
+    const previousEnabled = process.env.FIBER_RPC_ENABLED;
+    const previousLiveEnabled = process.env.FIBER_RPC_LIVE_ENABLED;
+    const previousUrl = process.env.FIBER_RPC_URL;
+    process.env.FIBER_RPC_ENABLED = "true";
+    process.env.FIBER_RPC_LIVE_ENABLED = "true";
+    process.env.FIBER_RPC_URL = "http://fiber-rpc.local";
+
+    const original: PaymentTrace = {
+      id: "trace_live_verify_original", createdAt: "2026-07-10T00:00:00.000Z", mode: "fiber-rpc", senderNode: "sender",
+      receiverNode: "receiver", amount: 100, asset: "CKB", status: "failed", latencyMs: 10,
+      failureFingerprint: "ROUTE_CAPACITY_INSUFFICIENT", events: [], replayResults: []
+    };
+    await saveTrace(original);
+    const requests: Array<{ method: string; params?: Array<Record<string, unknown>> }> = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      const body = JSON.parse(String(init?.body));
+      requests.push(body);
+      if (body.method === "node_info") return Response.json({ jsonrpc: "2.0", id: body.id, result: { pubkey: "sender", version: "test" } });
+      if (body.method === "list_channels") return Response.json({ jsonrpc: "2.0", id: body.id, result: { channels: [] } });
+      if (body.method === "graph_nodes") return Response.json({ jsonrpc: "2.0", id: body.id, result: { nodes: [] } });
+      if (body.method === "graph_channels") return Response.json({ jsonrpc: "2.0", id: body.id, result: { channels: [] } });
+      if (body.method === "parse_invoice") return Response.json({ jsonrpc: "2.0", id: body.id, result: {} });
+      return Response.json({ jsonrpc: "2.0", id: body.id, result: { status: "Created", payment_hash: "0xverified" } });
+    });
+
+    try {
+      const response = await verifyPost(new Request("http://localhost/api/traces/trace_live_verify_original/verify", {
+        method: "POST",
+        body: JSON.stringify({ invoice: "fibt1freshverificationinvoice", dryRun: false, amount: 64 })
+      }), { params: Promise.resolve({ id: original.id }) });
+      const json = await response.json();
+      const send = requests.find((request) => request.method === "send_payment");
+      const updatedOriginal = await getTrace(original.id);
+
+      expect(response.status).toBe(201);
+      expect(json.outcome).toBe("verified");
+      expect(send?.params?.[0].dry_run).toBe(true);
+      expect(updatedOriginal?.events.some((event) => event.stage === "live_verification")).toBe(true);
+    } finally {
+      restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
+      restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);
+      restoreEnv("FIBER_RPC_URL", previousUrl);
+    }
   });
 
   it("rejects invalid trace creation bodies", async () => {
@@ -733,7 +782,7 @@ describe("API routes", () => {
     }
   });
 
-  it("accepts same-origin dashboard write cookie when API key protection is enabled", async () => {
+  it("does not accept the removed dashboard secret cookie", async () => {
     const previousKey = process.env.FIBERTRACEBOX_API_KEY;
     process.env.FIBERTRACEBOX_API_KEY = "test-dashboard-key";
 
@@ -747,8 +796,8 @@ describe("API routes", () => {
       const response = await scenarioPost(request);
       const json = await response.json();
 
-      expect(response.status).toBe(201);
-      expect(json.trace.mode).toBe("sandbox");
+      expect(response.status).toBe(401);
+      expect(json.error).toBe("Unauthorized");
     } finally {
       restoreEnv("FIBERTRACEBOX_API_KEY", previousKey);
     }

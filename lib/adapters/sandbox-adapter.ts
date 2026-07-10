@@ -25,7 +25,8 @@ const stageByFingerprint: Record<FailureFingerprint, string> = {
   PAYMENT_AMOUNT_INVALID: "request_validation",
   LIQUIDITY_IMBALANCE: "liquidity_check",
   RETRY_PATH_UNAVAILABLE: "retry_planner",
-  PEER_OFFLINE_ROUTE_UNAVAILABLE: "peer_route_check"
+  PEER_OFFLINE_ROUTE_UNAVAILABLE: "peer_route_check",
+  UNKNOWN_FIBER_RPC_FAILURE: "fiber_rpc_error"
 };
 
 const failureMessages: Record<FailureFingerprint, string> = {
@@ -41,7 +42,8 @@ const failureMessages: Record<FailureFingerprint, string> = {
   PAYMENT_AMOUNT_INVALID: "Payment amount invalid before route discovery",
   LIQUIDITY_IMBALANCE: "Directional liquidity imbalance detected",
   RETRY_PATH_UNAVAILABLE: "Retry path unavailable after first failure",
-  PEER_OFFLINE_ROUTE_UNAVAILABLE: "Peer offline caused route unavailability"
+  PEER_OFFLINE_ROUTE_UNAVAILABLE: "Peer offline caused route unavailability",
+  UNKNOWN_FIBER_RPC_FAILURE: "Unclassified Fiber RPC failure"
 };
 
 const scenarioLatencies: Record<ScenarioName, number> = {
