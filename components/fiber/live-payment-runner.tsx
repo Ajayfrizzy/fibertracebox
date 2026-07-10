@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertCircle, FlaskConical, Loader2, Send } from "lucide-react";
-import { apiHeaders } from "@/lib/api/client-auth";
+import { AlertCircle, FlaskConical, KeyRound, Loader2, Send } from "lucide-react";
+import { apiHeaders, getStoredApiKey, storeApiKey } from "@/lib/api/client-auth";
 
 interface LivePaymentRunnerProps {
   liveEnabled: boolean;
@@ -26,12 +26,14 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
   const [amount, setAmount] = useState("");
   const [feeLimit, setFeeLimit] = useState("");
   const [dryRun, setDryRun] = useState(true);
+  const [apiKey, setApiKey] = useState(() => getStoredApiKey());
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function runLivePayment() {
     setRunning(true);
     setError(null);
+    storeApiKey(apiKey);
 
     try {
       const body =
@@ -58,7 +60,7 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
       const payload = (await response.json().catch(() => ({}))) as { trace?: { id: string }; error?: string };
 
       if (!response.ok || !payload.trace?.id) {
-        throw new Error(payload.error ?? "Live Fiber payment failed");
+        throw new Error(response.status === 401 ? "Invalid or missing FiberTracebox API key" : payload.error ?? "Live Fiber payment failed");
       }
 
       router.push(`/dashboard/traces/${payload.trace.id}`);
@@ -71,7 +73,7 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
 
   const rpcUnavailable = liveEnabled && probe?.ok === false;
   const missingInput = mode === "invoice" ? !invoice.trim() : !targetPubkey.trim() || !amount.trim();
-  const disabled = !liveEnabled || rpcUnavailable || running || missingInput;
+  const disabled = !liveEnabled || rpcUnavailable || running || missingInput || !apiKey.trim();
   const statusText = !liveEnabled
     ? "Fiber RPC live mode is disabled"
     : probe?.ok
@@ -171,6 +173,21 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
             className="h-4 w-4 accent-ckb"
           />
           Dry-run only
+        </label>
+
+        <label className="grid gap-1 text-sm font-semibold text-ink">
+          API key
+          <span className="relative">
+            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              autoComplete="off"
+              placeholder="Required for live checks"
+              className="w-full rounded-md border border-line py-2 pl-9 pr-3 text-sm font-normal outline-none focus:border-ckb"
+            />
+          </span>
         </label>
 
         <div className="flex min-w-0 flex-wrap items-center gap-3">
