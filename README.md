@@ -1,89 +1,195 @@
 # FiberTracebox
 
-Sentry-style tracing for CKB Fiber payments.
+Sentry-style tracing, replay, and diagnostics infrastructure for CKB Fiber payments.
 
-FiberTracebox is failure replay and reliability testing infrastructure for CKB Fiber. It turns failed Fiber payments into
-explainable timelines, failure fingerprints, replay evidence, and operator-ready fix reports.
+FiberTracebox turns Fiber payment attempts into structured traces with timelines, failure fingerprints, replay evidence, and
+operator-ready reports. It is built for Fiber node operators, wallet/payment infrastructure teams, and developers who need to
+debug routing, liquidity, peer, invoice, fee, and timeout failures.
 
-## Submission Links
+## Submission
 
-- Hosted demo: https://fibertracebox.online/
-- Repository: https://github.com/Ajayfrizzy/fibertracebox.git
-- Dashboard screenshots: https://drive.google.com/drive/folders/1Mkt6u65gf5GFoBmF6sOC99IjfMMvO5Ll?usp=drive_link
-- Demo walkthrough video: https://drive.google.com/drive/folders/19O9uawG__a2WE1diRS9USbl7Dgo0Wxi1?usp=sharing
+**Selected category:** Category 2: Node, Routing, Cross-Chain, and Diagnostics Infrastructure
 
-## Selected Category
+**Hosted demo:** https://fibertracebox.online/
 
-CKB Fiber Network Infrastructure Hackathon, Category 2: Node, Routing, Cross-Chain, and Diagnostics Infrastructure.
+**Repository:** https://github.com/Ajayfrizzy/fibertracebox.git
 
-## Infrastructure Gap Addressed
+**Dashboard screenshots:** https://drive.google.com/drive/folders/1Mkt6u65gf5GFoBmF6sOC99IjfMMvO5Ll?usp=drive_link
 
-Fiber payments can fail for different operational reasons: no route, insufficient route capacity, offline peers, channel policy
-limits, fee limits, invoice problems, timeout, or duplicate payment sessions. Today, a developer or node operator may have to
-inspect raw FNN CLI/RPC output, channel state, invoice data, payment hashes, and logs separately to understand what happened.
+**Demo walkthrough video:** https://drive.google.com/drive/folders/19O9uawG__a2WE1diRS9USbl7Dgo0Wxi1?usp=sharing
 
-The infrastructure gap is an operator-facing diagnostics layer for Fiber payments. A raw failure code or CLI response is not enough on its own; operators need a trace that shows when the request started, which stage failed, what Fiber evidence was
-available, what the likely cause was, and what action should be tried next.
+## Project Overview
 
-FiberTracebox demonstrates this in two modes:
+FiberTracebox is a diagnostics and observability platform for CKB Fiber payments. When a Fiber payment fails or needs
+inspection, FiberTracebox records the payment lifecycle, classifies the failure, explains likely causes, recommends fixes, and
+exports Markdown or JSON reports.
 
-- deterministic sandbox replay for repeatable failure demos, CI-style diagnostics, and Replay-to-Fix recommendations
-- live Fiber Network Node evidence for real invoices, node pubkeys, payment hashes, channel state, balances, and FNN status
+The target audience is:
 
-In short, FiberTracebox is a tracing and replay layer for Fiber payment reliability: it turns scattered payment/node output
-into a timeline, failure fingerprint, diagnosis, and exportable report.
+- Fiber Network node operators.
+- Wallet and payment infrastructure teams.
+- Developers integrating Fiber payments.
+- Teams that need traceable payment reliability evidence.
 
-## Why This Matters
+## Problem Solved
 
-Fiber payment failures are operationally expensive because the useful evidence is scattered across node RPC output, channel
-state, invoice data, graph availability, payment hashes, and logs. FiberTracebox brings those signals into one trace and one
-operator-ready report, so a team can explain what failed, reproduce the class of failure safely, and choose the next action
-without manually stitching together raw FNN output.
+Fiber payment failures can be difficult to debug because the useful evidence is spread across node RPC output, channel state,
+invoice data, payment hashes, graph availability, and logs. A raw failure response often does not explain whether the issue is
+routing, liquidity, peer connectivity, channel policy, fee limit, invoice state, or timeout behavior.
 
-## Hackathon Narrative
+FiberTracebox solves this by creating one operator-facing trace for each payment attempt. The trace shows what happened, where
+the payment failed, what Fiber evidence was available, which failure fingerprint matched, and which fix should be tried next.
 
-FiberTracebox is an observability layer for CKB Fiber operators. It is not a wallet, explorer, or payment form; it is the
-debugging infrastructure that should exist beside those tools. When a Fiber payment fails, FiberTracebox captures the
-available node evidence, classifies the failure, runs safe Replay-to-Fix analysis, and produces a report that another operator
-can act on.
+The project relates directly to Fiber Network infrastructure because it integrates with Fiber Network Node JSON-RPC, captures
+node and channel evidence, supports invoice dry-runs and explicitly enabled live traces, and provides tooling for diagnosing
+Fiber routing and payment reliability issues without exposing private FNN RPC endpoints publicly.
 
-The project is built around three proof points:
+## System Design
 
-- Real infrastructure surface: dashboard, API, CLI, SDK, Supabase schema, and report export.
-- Real Fiber awareness: FNN RPC probing, invoices, pubkeys, channel snapshots, graph availability, payment hashes, and live error classification.
-- Safe reliability workflow: deterministic replay explains likely fixes without repeatedly mutating live channels or moving funds.
+### User Flow
 
-The judging takeaway is simple: FiberTracebox turns raw Fiber payment failures into an operator workflow.
+1. Open the dashboard at https://fibertracebox.online/.
+2. Run a deterministic sandbox scenario or create a Fiber RPC payment trace.
+3. Inspect the generated trace timeline and failure stage.
+4. Review the fingerprint, diagnosis, likely causes, and suggested fixes.
+5. Run Replay-to-Fix for safe simulated replay strategies.
+6. Compare failed and successful replay outcomes.
+7. Export a Markdown or JSON report for operator handoff.
+8. Use the CLI, SDK, or API for the same workflow outside the dashboard.
 
-## Winning Demo in 5 Minutes
+### Developer Flow
 
-1. Open `/dashboard/judge-demo`.
-2. Run the `route-capacity` full demo.
-3. Open the generated trace and show the lifecycle timeline.
-4. Point to the `ROUTE_CAPACITY_INSUFFICIENT` fingerprint and diagnosis.
-5. Open Replay Lab and show failed/successful replay strategies.
-6. Show the smallest-fix recommendation and export the Markdown report.
-7. Show the live Fiber evidence bundle in `payment-testing/`: FNN pubkeys, channel state, payment hash, sender `Success`, and receiver `Paid`.
-8. Close with the safety boundary: sandbox replay is deterministic and safe; live Fiber RPC captures real evidence without mutating routes unless live payments are explicitly enabled.
+1. Next.js API routes receive trace, scenario, diagnosis, replay, report, health, and stats requests.
+2. The adapter layer selects either the deterministic sandbox adapter or the Fiber RPC adapter.
+3. The sandbox adapter creates repeatable payment failure traces for demos, tests, and Replay-to-Fix.
+4. The Fiber RPC adapter talks to a configured FNN JSON-RPC endpoint and captures live node/payment evidence.
+5. The diagnosis engine classifies failure fingerprints and maps them to likely causes and fixes.
+6. The Replay-to-Fix engine tests safe strategy changes in sandbox mode and recommends the smallest successful fix.
+7. The report generator exports portable Markdown and JSON evidence bundles.
+8. Storage uses local memory/cache by default and Supabase PostgreSQL when configured.
 
-## What Is Live vs Simulated
+## Architecture
 
-| Capability | Sandbox mode | Live Fiber RPC mode | Evidence bundle |
-| --- | --- | --- | --- |
-| Failure scenarios | Deterministic simulations | Real FNN failures when returned by RPC | Raw captured FNN outputs |
-| Replay-to-Fix | Deterministic safe replay lab | Evidence-only; no live route mutation | Reported as proof artifacts |
-| Node pubkeys/version | Simulated labels | Real `node_info` values | Real captured values |
-| Channel balances/state | Simulated conditions | Real `list_channels` snapshot | Real captured JSON |
-| Graph evidence | Simulated route model | `graph_nodes` / `graph_channels` availability, counts, receiver presence when known | Captured proof notes |
-| Payment settlement | Simulated | Dry-run by default; live send only when explicitly enabled | Real captured `Success` / `Paid` proof |
-| Reports | Full diagnosis and replay recommendation | Live evidence, fingerprint, provenance, and safety disclosure | Judge-friendly proof narrative |
+- Next.js App Router frontend and API routes.
+- React and TypeScript.
+- Tailwind CSS dashboard.
+- Adapter layer for sandbox mode and optional Fiber RPC mode.
+- Diagnosis engine for failure fingerprint classification.
+- Replay-to-Fix engine for deterministic replay analysis.
+- Markdown and JSON report generator.
+- Commander-based CLI.
+- TypeScript SDK client.
+- Optional Supabase PostgreSQL persistence.
+- Vitest coverage for core and API behavior.
 
-## Standout Feature: Replay-to-Fix Engine
+## Setup Environment
 
-For a failed trace, FiberTracebox runs replay strategies:
+### Local Development
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+### Production Build
+
+```bash
+npm run build
+npm run start
+```
+
+### Hosted CLI Setup
+
+```bash
+export FIBERTRACEBOX_API_URL=https://fibertracebox.online
+export FIBERTRACEBOX_API_KEY=<your-api-key>
+```
+
+The API key is required only for protected write commands when server-side API key protection is enabled. Do not publish the
+real key in public docs, screenshots, or submissions.
+
+### Optional Live Fiber RPC Setup
+
+Run FNN separately and keep its JSON-RPC endpoint private. On the FiberTracebox server, configure:
+
+```bash
+FIBER_RPC_URL=http://127.0.0.1:<fnn-rpc-port>
+FIBER_RPC_ENABLED=true
+FIBER_RPC_LIVE_ENABLED=true
+FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
+```
+
+`FIBER_RPC_ALLOW_LIVE_PAYMENTS=false` keeps live requests as dry-runs. Set it to `true` only when an operator explicitly wants
+real live sends.
+
+## Tooling
+
+CKB/Fiber tooling and interfaces:
+
+- Fiber Network Node JSON-RPC.
+- `node_info` for node identity, pubkey, version, peer count, and node metadata.
+- `list_channels` for channel state, peer pubkeys, balances, enabled state, and liquidity evidence.
+- `send_payment` for invoice dry-runs and explicitly enabled live sends.
+- `get_payment` for payment status evidence when a payment hash is available.
+- Fiber invoice-based payment traces.
+- Captured live two-node Fiber evidence.
+- Deterministic Fiber-style failure scenarios.
+
+Project tooling:
+
+- Next.js dashboard and API routes.
+- TypeScript SDK.
+- Commander CLI.
+- Supabase schema/migrations.
+- Vitest tests.
+- Markdown and JSON report exports.
+
+## Current Functionality
+
+FiberTracebox currently supports:
+
+- Dashboard overview for trace health, recent failures, and replay queue.
+- Deterministic sandbox scenarios for Fiber payment failures.
+- Fiber RPC health probing.
+- Live Fiber invoice dry-runs and live-send traces when explicitly enabled.
+- Payment trace recording with lifecycle events.
+- Millisecond-level payment timelines.
+- Failure fingerprint classification.
+- Diagnosis catalog with likely causes and suggested fixes.
+- Replay-to-Fix engine for sandbox traces.
+- Smallest successful fix recommendation.
+- Replay comparison view.
+- Trace search, filtering, and sorting.
+- Trace detail pages with timeline, diagnosis, live evidence, and reports.
+- Markdown and JSON report export.
+- API routes for health, traces, scenarios, diagnosis, replay, reports, and stats.
+- CLI commands for health checks, scenario runs, live traces, replay, trace listing, and reports.
+- TypeScript SDK client.
+- Optional Supabase persistence.
+- API key protection for hosted write endpoints.
+
+## Sandbox vs Live Fiber RPC Mode
+
+| Capability | Sandbox mode | Live Fiber RPC mode |
+| --- | --- | --- |
+| Failure scenarios | Deterministic simulations | Real FNN failures when returned by RPC |
+| Replay-to-Fix | Safe replay lab | Evidence-only; no automatic live route mutation |
+| Node identity | Simulated labels | Real `node_info` values |
+| Channel state | Simulated conditions | Real `list_channels` snapshot |
+| Graph evidence | Simulated route model | Captured graph/channel availability when available |
+| Payment settlement | Simulated | Dry-run by default; live send only when explicitly enabled |
+| Reports | Full diagnosis and replay recommendation | Live evidence, fingerprint, provenance, and safety disclosure |
+
+This safety boundary is intentional: live traces are evidence, while sandbox traces are the replay laboratory.
+
+## Standout Feature: Replay-to-Fix
+
+For a failed sandbox trace, FiberTracebox can replay controlled strategy changes:
 
 - same conditions
-- smaller amount
+- reduced amount
 - increased outbound capacity
 - alternate route
 - restored peer
@@ -91,91 +197,7 @@ For a failed trace, FiberTracebox runs replay strategies:
 - longer timeout
 - split payment
 
-It marks the smallest successful fix and includes it in the report.
-
-## Demo
-
-The hosted demo runs the deterministic sandbox and Replay-to-Fix workflow. The `/dashboard/judge-demo` page gives judges a
-guided version of the core flow. Live Fiber RPC is intentionally demonstrated
-locally against a private two-node FNN setup. The successful live-payment proof bundle is in `payment-testing/`, while raw
-failed-transaction captures are in `failed-transactions/`. This avoids exposing Fiber node RPC publicly while still proving
-real Fiber integration.
-
-1. Open the dashboard.
-2. Run the `route-capacity` sandbox scenario.
-3. Inspect the failed trace timeline and `ROUTE_CAPACITY_INSUFFICIENT` fingerprint.
-4. Run Replay-to-Fix and show the smallest successful fix.
-5. Export the Markdown or JSON report.
-6. Open the live evidence bundle in `payment-testing/`.
-7. Show the FiberTracebox live trace with FNN pubkeys, payment hash, channel snapshots, payment status, and report export.
-
-## Real Fiber Evidence
-
-The repository includes a curated live payment proof bundle in `payment-testing/`.
-
-| Evidence | Value |
-| --- | --- |
-| Sender Node1 pubkey | `03c93e93abdb37a60f7d4f827cdfef091b418515170f78132928e381c5bf6b298d` |
-| Receiver Node2 pubkey | `0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484` |
-| Fiber version | `0.9.0-rc5` |
-| Invoice amount | `1 Fibt` (`100,000,000` raw units) |
-| Payment hash | `0xf988452f37ad592cf14b42edf017e171dc2bd2ae4958d6b04ff03ee16afc60b9` |
-| Sender final payment status | `Success` |
-| Receiver invoice status | `Paid` |
-| FiberTracebox trace ID | `trace_49a88732-e613-44c1-b65d-60e78c7c1de2` |
-
-See `payment-testing/README.md` for the raw FNN evidence file index, and `docs/demo-report.md` for the judge-friendly
-narrative report.
-
-## Real Failure Corpus
-
-The repository also includes raw failed-transaction captures in `failed-transactions/`.
-
-| Fingerprint | Raw FNN evidence |
-| --- | --- |
-| `ROUTE_CAPACITY_INSUFFICIENT` | `max outbound liquidity 40099999000 is insufficient, required amount: 160000000000` |
-| `ROUTE_NOT_FOUND` | `PathFind error: no path found` |
-| `FEE_LIMIT_TOO_LOW` | `max_fee_amount is too low for trampoline routing` |
-| `INVOICE_CANCELLED` | payment status `Failed` with `failed_error: InvoiceCancelled` |
-| `PAYMENT_AMOUNT_INVALID` | `failed to parse uint hex ... PosOverflow` |
-| `PEER_OFFLINE_ROUTE_UNAVAILABLE` | node2 RPC unavailable, node1 `peers_count: 0x0`, and no outbound route/liquidity |
-
-These captures are used as the real-world failure corpus for the classifier, report provenance, and judge demo evidence cards.
-
-## Architecture
-
-- Next.js App Router frontend and API routes.
-- TypeScript domain, API, CLI, and SDK.
-- Tailwind CSS dashboard.
-- Supabase PostgreSQL schema with server-side writes.
-- Sandbox adapter for deterministic demos.
-- Fiber RPC health probing, channel snapshotting, invoice dry-run/live-send adapter, and live evidence reporting.
-- Commander CLI.
-- Vitest coverage for core and API behavior.
-
-## Features
-
-- Payment trace recorder.
-- Millisecond lifecycle timeline.
-- Failure fingerprint classification.
-- Real FNN failure corpus for route capacity, no route, fee limit, invoice cancelled, invalid amount, and peer route-unavailable evidence.
-- Diagnosis catalog with likely causes and fixes.
-- Replay-to-Fix engine.
-- Live Fiber evidence panel with FNN pubkey, payment hash, channel snapshots, graph availability, and payment status.
-- Exportable Markdown and JSON reports.
-- Dashboard, API, CLI, SDK, docs, scenarios, and tests.
-
-## Sandbox vs Optional Live Fiber RPC Mode
-
-Sandbox mode is fully working and does not require a live Fiber node. It simulates route discovery, peer reachability, channel
-state, liquidity, fees, timeouts, retry paths, and settlement outcomes.
-
-Fiber RPC mode can connect to an FNN JSON-RPC endpoint for node health, channel snapshots, graph availability, and invoice
-payment checks. It defaults to `dry_run: true`; real sends require `FIBER_RPC_ALLOW_LIVE_PAYMENTS=true`.
-
-Replay-to-Fix is deterministic and safe in sandbox mode. In live Fiber mode, FiberTracebox captures real node, channel,
-invoice, graph, and payment evidence, but does not mutate live routes because that can move funds or change channel state.
-This boundary is intentional: live traces are evidence, sandbox traces are the replay laboratory.
+It marks the smallest successful fix and includes that recommendation in the report.
 
 ## API Reference
 
@@ -192,7 +214,18 @@ POST /api/scenarios/run
 GET  /api/stats
 ```
 
+Hosted API base:
+
+```bash
+https://fibertracebox.online
+```
+
+Write endpoints should be protected with `FIBERTRACEBOX_API_KEY`. Clients can send it as `x-api-key` or
+`Authorization: Bearer <key>`.
+
 ## CLI Usage
+
+From the project folder:
 
 ```bash
 npm run cli -- health
@@ -208,30 +241,60 @@ npm run cli -- report <traceId> --format json
 npm run demo:judge
 ```
 
-Set `FIBERTRACEBOX_API_URL` for hosted deployments. If write protection is enabled, set `FIBERTRACEBOX_API_KEY` in the shell
-running the CLI. Run `npm run build:cli && npm link` once if you want the global `fibertracebox` command.
-
-For live Fiber node checks, run FNN separately and set:
+Optional global binary:
 
 ```bash
-FIBER_RPC_URL=http://127.0.0.1:<fnn-rpc-port>
-FIBER_RPC_ENABLED=true
-FIBER_RPC_LIVE_ENABLED=true
-FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
+npm run build:cli
+npm link
+fibertracebox health
+fibertracebox scenario run route-capacity
+fibertracebox live <fiber-invoice>
+fibertracebox trace list
 ```
 
-Hosted write endpoints should be protected with `FIBERTRACEBOX_API_KEY`. Clients can send it as `x-api-key` or
-`Authorization: Bearer <key>`. Production deployments refuse write requests if API-key protection is not configured.
+## Demo Flow
 
-## Local Setup
+1. Open `/dashboard/judge-demo`.
+2. Run the `route-capacity` full demo.
+3. Open the generated trace and show the lifecycle timeline.
+4. Point to the `ROUTE_CAPACITY_INSUFFICIENT` fingerprint and diagnosis.
+5. Open Replay Lab and show failed/successful replay strategies.
+6. Show the smallest-fix recommendation.
+7. Export the Markdown report.
+8. Explain the safety boundary: sandbox replay is deterministic and safe; live Fiber RPC captures real evidence without
+   mutating live channels unless live payments are explicitly enabled.
 
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
-```
+## Real Fiber Evidence
 
-Open `http://localhost:3000`.
+The repository includes a curated live payment proof bundle in `payment-testing/`.
+
+| Evidence | Value |
+| --- | --- |
+| Sender Node1 pubkey | `03c93e93abdb37a60f7d4f827cdfef091b418515170f78132928e381c5bf6b298d` |
+| Receiver Node2 pubkey | `0360779e54f1b2f380fe6889223ccf240c857bfebacd3c197a8d0124e9ab5d0484` |
+| Fiber version | `0.9.0-rc5` |
+| Invoice amount | `1 Fibt` (`100,000,000` raw units) |
+| Payment hash | `0xf988452f37ad592cf14b42edf017e171dc2bd2ae4958d6b04ff03ee16afc60b9` |
+| Sender final payment status | `Success` |
+| Receiver invoice status | `Paid` |
+| FiberTracebox trace ID | `trace_49a88732-e613-44c1-b65d-60e78c7c1de2` |
+
+See `payment-testing/README.md` for the raw FNN evidence file index and `docs/demo-report.md` for a narrative report.
+
+## Real Failure Corpus
+
+The repository includes raw failed-transaction captures in `failed-transactions/`.
+
+| Fingerprint | Raw FNN evidence |
+| --- | --- |
+| `ROUTE_CAPACITY_INSUFFICIENT` | `max outbound liquidity 40099999000 is insufficient, required amount: 160000000000` |
+| `ROUTE_NOT_FOUND` | `PathFind error: no path found` |
+| `FEE_LIMIT_TOO_LOW` | `max_fee_amount is too low for trampoline routing` |
+| `INVOICE_CANCELLED` | payment status `Failed` with `failed_error: InvoiceCancelled` |
+| `PAYMENT_AMOUNT_INVALID` | `failed to parse uint hex ... PosOverflow` |
+| `PEER_OFFLINE_ROUTE_UNAVAILABLE` | node2 RPC unavailable, node1 `peers_count: 0x0`, and no outbound route/liquidity |
+
+These captures are used as the failure corpus for classifier coverage, report provenance, and demo evidence.
 
 ## Testing
 
@@ -240,62 +303,53 @@ npm run test
 npm run build
 ```
 
-## Current Limitations
+## Deployment Notes
 
-- Live replay does not mutate real Fiber routes, balances, channels, or payment sessions for safety.
-- Replay-to-Fix is deterministic and intended for reproducible diagnosis, CI-style checks, and operator recommendations.
-- The hosted demo does not expose a public FNN JSON-RPC endpoint.
-- Current graph analysis captures availability, counts, receiver presence when known, and usable captured channels; deeper live path simulation remains roadmap work.
-- Real failed Fiber evidence should be added under `failed-transactions/` after local FNN failure testing.
+The hosted demo runs at `https://fibertracebox.online`. The public deployment is intended for the dashboard, deterministic
+sandbox traces, Replay-to-Fix, docs, API routes, and report export.
 
-## Why This Should Win
-
-FiberTracebox is infrastructure, not another payment UI. It gives Fiber developers and operators a missing observability
-layer: trace capture, failure fingerprinting, safe Replay-to-Fix analysis, live FNN evidence, CLI/API/SDK access, and portable
-reports that turn scattered node output into an actionable debugging artifact.
-
-The project is also honest about safety. Live Fiber RPC mode captures evidence and classifies real failures; Replay-to-Fix is
-kept in the deterministic lab unless an operator explicitly chooses live payment behavior. That makes the demo repeatable for
-judges and useful for operators.
-
-## Vercel Deployment Summary
-
-FiberTracebox can be deployed to Vercel for the hosted dashboard, deterministic sandbox, Replay-to-Fix flow, API routes,
-docs, and report export.
-
-1. Push the repository to GitHub.
-2. Import the repository in Vercel.
-3. Use the default Next.js build settings.
-4. Add the required environment variables in Vercel Project Settings.
-5. Deploy and open the generated Vercel URL.
-
-Recommended Vercel environment variables:
+Recommended production environment variables:
 
 ```bash
+FIBERTRACEBOX_PUBLIC_URL=https://fibertracebox.online
+FIBERTRACEBOX_API_KEY=<your-fibertracebox-api-key>
+FIBERTRACEBOX_REQUIRE_API_KEY=true
 NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
-FIBERTRACEBOX_API_KEY=<your-fibertracebox-api-key>
-FIBERTRACEBOX_REQUIRE_API_KEY=true
 FIBER_RPC_ENABLED=false
 FIBER_RPC_LIVE_ENABLED=false
 FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
 ```
 
-The hosted Vercel demo is intended for sandbox traces, Replay-to-Fix, docs, and report export. Live Fiber RPC is demonstrated
-locally against a private two-node FNN setup. Successful live-payment evidence is committed in `payment-testing/`, and raw
-failed-payment evidence is committed in `failed-transactions/`. This avoids exposing an FNN JSON-RPC port publicly while
-still proving real Fiber integration.
+Live Fiber RPC should remain private. The hosted demo does not expose a public FNN JSON-RPC endpoint.
 
-## Roadmap
+## Current Limitations
 
-- Graph-aware live Fiber route diagnostics using `graph_nodes`, `graph_channels`, channel policy, and liquidity snapshots.
-- Replay-safe live simulation mode that explains alternate routes without mutating channels or moving funds.
-- Expand the Fiber failure corpus with more real FNN `failed_error` and `failure_detail` samples.
-- Trace redaction and retention policies.
-- Multi-node topology import.
-- CI scenario packs for Fiber routing changes.
-- Regression fingerprints across software versions.
+- Live replay does not mutate real Fiber routes, balances, channels, or payment sessions for safety.
+- Replay-to-Fix is deterministic and intended for reproducible diagnosis, tests, and operator recommendations.
+- The hosted demo does not expose a public FNN JSON-RPC endpoint.
+- Current graph analysis captures availability, counts, receiver presence when known, and usable captured channels.
+- Deeper live route simulation remains roadmap work.
+
+## Future Functionality
+
+- Deeper live Fiber graph and route simulation.
+- More advanced liquidity analysis across multi-hop routes.
+- Operator alerts and webhooks for repeated failure fingerprints.
+- Team dashboards for payment reliability over time.
+- Larger real-world FNN failure corpus for classifier coverage.
+- Integration with wallets, merchants, LSPs, and payment processors.
+- Safer controlled live replay flows with explicit operator approvals.
+- Multi-asset Fiber payment diagnostics.
+- Historical reporting for peer reliability, route quality, and payment success rates.
+- Hosted user accounts, saved workspaces, and shared trace reports.
+
+## Why This Matters
+
+FiberTracebox is infrastructure, not another payment UI. It gives Fiber developers and operators an observability layer for
+payment reliability: trace capture, failure fingerprinting, safe Replay-to-Fix analysis, live FNN evidence, CLI/API/SDK access,
+and portable reports that turn scattered node output into an actionable debugging artifact.
 
 ## Team
 
