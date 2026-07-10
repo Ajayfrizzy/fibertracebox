@@ -43,14 +43,14 @@ export function ScenarioRunner({ scenarios }: ScenarioRunnerProps) {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-md bg-panel text-ckb">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4 shadow-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-panel text-ckb">
             <Boxes size={20} />
           </span>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold text-ink">Scenario Sandbox</h2>
-            <p className="text-sm text-gray-500">Run deterministic Fiber payment attempts without a live node.</p>
+            <p className="break-words text-sm text-gray-500">Run deterministic Fiber payment attempts without a live node.</p>
           </div>
         </div>
         <button
@@ -74,7 +74,7 @@ export function ScenarioRunner({ scenarios }: ScenarioRunnerProps) {
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
         {scenarios.map((scenario) => (
           <button
             key={scenario.name}

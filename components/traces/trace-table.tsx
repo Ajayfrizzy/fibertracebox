@@ -105,7 +105,7 @@ export function TraceTable({ traces, compact = false }: TraceTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-white shadow-sm">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-line bg-white shadow-sm">
       {!compact && (
         <div className="border-b border-line bg-white p-4">
           <div className="grid gap-3 lg:grid-cols-[1.2fr_repeat(4,minmax(0,0.7fr))_auto]">
@@ -182,7 +182,7 @@ export function TraceTable({ traces, compact = false }: TraceTableProps) {
       {filtered.length ? (
         <>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-line text-sm">
+            <table className="w-full min-w-max divide-y divide-line text-sm">
               <thead className="bg-panel text-left text-xs uppercase text-gray-500">
                 <tr>
                   <th className="px-4 py-3 font-semibold">ID</th>

@@ -26,13 +26,13 @@ export default async function HomePage() {
   const fiberRpcProbe = await probeFiberRpc();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
+    <div className="mx-auto w-full max-w-7xl min-w-0 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
+            <div className="min-w-0 max-w-full flex-1 basis-full lg:basis-0">
               <p className="mono text-xs font-semibold uppercase text-ckb">Operations overview</p>
-              <h1 className="mt-2 text-3xl font-semibold text-ink">Fiber payment diagnostics</h1>
+              <h1 className="mt-2 break-words text-2xl font-semibold text-ink sm:text-3xl">Fiber payment diagnostics</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
                 Review current trace health, run deterministic failures, replay broken routes, and export evidence for operator handoff.
               </p>
@@ -55,7 +55,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
             <StatusPanel label="Database" value={databaseMode} detail={databaseMode === "memory" ? "Local volatile store" : "Supabase enabled"} />
             <StatusPanel label="Adapter" value={adapter.getMode()} detail={fiberRpc.adapterReadyOnly ? "Fiber RPC adapter-ready" : "Active payment source"} />
             <StatusPanel
@@ -66,9 +66,9 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <div className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4">
-            <div>
+            <div className="min-w-0">
               <p className="mono text-xs font-semibold uppercase text-gray-500">Failure queue</p>
               <h2 className="mt-1 text-xl font-semibold text-ink">Needs attention</h2>
             </div>
@@ -82,13 +82,13 @@ export default async function HomePage() {
                 <Link
                   key={trace.id}
                   href={`/dashboard/traces/${trace.id}`}
-                  className="block rounded-md border border-line bg-panel px-3 py-3 hover:border-ckb hover:bg-white"
+                  className="block min-w-0 rounded-md border border-line bg-panel px-3 py-3 hover:border-ckb hover:bg-white"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="mono max-w-[260px] truncate text-xs font-semibold text-ckb">{trace.id}</span>
+                    <span className="mono min-w-0 flex-1 truncate text-xs font-semibold text-ckb">{trace.id}</span>
                     <span className="text-xs font-semibold text-red-700">{trace.latencyMs}ms</span>
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-ink">{trace.failureFingerprint?.replaceAll("_", " ")}</p>
+                  <p className="mt-1 break-words text-sm font-semibold text-ink">{trace.failureFingerprint?.replaceAll("_", " ")}</p>
                   <p className="mt-1 text-xs text-gray-500">
                     {formatTraceAmount(trace)} · {trace.senderNode} to {trace.receiverNode}
                   </p>
@@ -103,35 +103,23 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="lg:col-span-1">
-          <MetricCard label="Total traces" value={stats.totalTraces} detail="Recorded attempts" icon={Activity} />
-        </div>
-        <div className="lg:col-span-1">
-          <MetricCard label="Success" value={stats.successCount} detail="Settled payments" icon={ShieldCheck} />
-        </div>
-        <div className="lg:col-span-1">
-          <MetricCard label="Failed" value={stats.failedCount} detail="Needs diagnosis" icon={AlertTriangle} />
-        </div>
-        <div className="lg:col-span-1">
-          <MetricCard label="Avg latency" value={`${stats.averageLatency}ms`} detail="Across traces" icon={Clock3} />
-        </div>
-        <div className="lg:col-span-1">
-          <MetricCard
-            label="Top fingerprint"
-            value={stats.mostCommonFailureFingerprint ? stats.mostCommonFailureFingerprint.replaceAll("_", " ") : "none"}
-            detail="Most common failure"
-            icon={Gauge}
-            compactValue
-          />
-        </div>
-        <div className="lg:col-span-1">
-          <MetricCard label="Replay success" value={`${stats.replaySuccessRate}%`} detail="Replay scenarios" icon={RotateCcw} />
-        </div>
+      <section className="mt-6 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <MetricCard label="Total traces" value={stats.totalTraces} detail="Recorded attempts" icon={Activity} />
+        <MetricCard label="Success" value={stats.successCount} detail="Settled payments" icon={ShieldCheck} />
+        <MetricCard label="Failed" value={stats.failedCount} detail="Needs diagnosis" icon={AlertTriangle} />
+        <MetricCard label="Avg latency" value={`${stats.averageLatency}ms`} detail="Across traces" icon={Clock3} />
+        <MetricCard
+          label="Top fingerprint"
+          value={stats.mostCommonFailureFingerprint ? stats.mostCommonFailureFingerprint.replaceAll("_", " ") : "none"}
+          detail="Most common failure"
+          icon={Gauge}
+          compactValue
+        />
+        <MetricCard label="Replay success" value={`${stats.replaySuccessRate}%`} detail="Replay scenarios" icon={RotateCcw} />
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="space-y-6">
+      <section className="mt-6 grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="min-w-0 space-y-6">
           <LivePaymentRunner
             liveEnabled={fiberRpc.liveEnabled}
             allowLivePayments={fiberRpc.allowLivePayments}
@@ -149,9 +137,9 @@ export default async function HomePage() {
             }
           />
           <ScenarioRunner scenarios={scenarios.slice(0, 4)} />
-          <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <div className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-lg font-semibold text-ink">Replay Queue</h2>
                 <p className="text-sm text-gray-500">Failed and replayed traces available for comparison.</p>
               </div>
@@ -159,15 +147,15 @@ export default async function HomePage() {
                 Open lab
               </Link>
             </div>
-            <div className="mt-4 grid gap-2">
+            <div className="mt-4 grid grid-cols-1 gap-2">
               {replayQueue.length ? (
                 replayQueue.map((trace) => (
                   <Link
                     key={trace.id}
                     href={`/dashboard/replay?trace=${trace.id}`}
-                    className="flex items-center justify-between gap-3 rounded-md bg-panel px-3 py-2 text-sm hover:bg-white"
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-md bg-panel px-3 py-2 text-sm hover:bg-white"
                   >
-                    <span className="mono truncate font-semibold text-ckb">{trace.id}</span>
+                    <span className="mono min-w-0 truncate font-semibold text-ckb">{trace.id}</span>
                     <span className="shrink-0 text-xs text-gray-500">{trace.status}</span>
                   </Link>
                 ))
@@ -180,9 +168,9 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div>
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div>
+        <div className="min-w-0">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
               <h2 className="text-xl font-semibold text-ink">Recent Traces</h2>
               <p className="text-sm text-gray-500">Latest sandbox and adapter-ready payment attempts.</p>
             </div>
@@ -199,10 +187,10 @@ export default async function HomePage() {
 
 function StatusPanel({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-md bg-panel p-3">
+    <div className="min-w-0 rounded-md bg-panel p-3">
       <p className="text-xs font-semibold uppercase text-gray-500">{label}</p>
       <p className="mono mt-1 break-words text-sm font-semibold text-ink">{value}</p>
-      <p className="mt-1 text-xs text-gray-500">{detail}</p>
+      <p className="mt-1 break-words text-xs text-gray-500">{detail}</p>
     </div>
   );
 }

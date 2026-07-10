@@ -80,19 +80,19 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
       : "Live Fiber RPC is unavailable";
 
   return (
-    <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
+    <div className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="mono text-xs font-semibold uppercase text-ckb">Live Fiber RPC</p>
           <h2 className="mt-1 text-lg font-semibold text-ink">Run a real node payment check</h2>
-          <p className="mt-1 text-sm text-gray-500">{statusText}</p>
+          <p className="mt-1 break-words text-sm text-gray-500">{statusText}</p>
         </div>
         <span className="grid h-10 w-10 place-items-center rounded-md bg-panel text-ckb">
           {dryRun || !allowLivePayments ? <FlaskConical size={19} /> : <Send size={19} />}
         </span>
       </div>
 
-      <div className="mt-4 grid gap-3">
+      <div className="mt-4 grid grid-cols-1 gap-3">
         <div className="inline-grid w-fit grid-cols-2 rounded-md border border-line bg-panel p-1 text-sm font-semibold">
           <button
             type="button"
@@ -140,7 +140,7 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
           </label>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-ink">
             {mode === "invoice" ? "Amount override" : "Amount"}
             <input
@@ -174,7 +174,7 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
           Dry-run only
         </label>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={runLivePayment}
@@ -184,7 +184,7 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, probe }: Liv
             {running ? <Loader2 className="animate-spin" size={16} /> : dryRun || !allowLivePayments ? <FlaskConical size={16} /> : <Send size={16} />}
             {dryRun || !allowLivePayments ? "Run Dry-Run" : mode === "invoice" ? "Send Payment" : "Send Keysend"}
           </button>
-          {probe?.pubkey && <span className="mono max-w-full truncate text-xs text-gray-500">{probe.pubkey}</span>}
+          {probe?.pubkey && <span className="mono min-w-0 max-w-full flex-1 truncate text-xs text-gray-500">{probe.pubkey}</span>}
         </div>
       </div>
 

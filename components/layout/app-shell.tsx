@@ -19,17 +19,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-line bg-panel/92 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-7xl min-w-0 items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-md bg-ink text-panel">
               <Activity size={20} />
             </span>
-            <span>
-              <span className="block text-sm font-semibold tracking-wide text-ink">FiberTracebox</span>
-              <span className="mono block text-[11px] uppercase text-gray-500">Failure replay infrastructure</span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold tracking-wide text-ink">FiberTracebox</span>
+              <span className="mono block truncate text-[11px] uppercase text-gray-500">Failure replay infrastructure</span>
             </span>
           </Link>
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-1 xl:flex">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActivePath(pathname, item.href);
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             CLI
           </Link>
         </div>
-        <nav className="flex gap-1 overflow-x-auto border-t border-line px-4 py-2 md:hidden">
+        <nav className="flex gap-1 overflow-x-auto border-t border-line px-4 py-2 xl:hidden">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActivePath(pathname, item.href);
