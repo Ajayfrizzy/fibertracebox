@@ -51,8 +51,8 @@ FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
 With `FIBER_RPC_ALLOW_LIVE_PAYMENTS=false`, live requests are sent to FNN with `dry_run: true`. Set it to `true` only when
 the operator intentionally wants FiberTracebox to send real payments.
 
-Do not expose the FNN JSON-RPC port directly to the internet. Bind it to localhost or a private network and put FiberTracebox
-behind your normal application authentication and API protection.
+The FNN JSON-RPC port must not be exposed directly to the internet. It should be bound to localhost or a private network, with
+FiberTracebox placed behind the deployment's application authentication and API protection.
 
 ## Replay Safety Boundary
 
@@ -78,7 +78,7 @@ Verification links are included in Markdown and JSON reports.
 
 The current hosted deployment uses the Node1 environment only, although its current pubkey differs from the historical Node1
 capture. The real Node1-to-Node2 settlement and failure bundles were captured
-earlier on Fiber testnet while both author-operated local nodes were running. Node2 is currently offline, so the submission does
+earlier on Fiber testnet while both locally operated project nodes were running. Node2 is currently offline, so the submission does
 not claim a completed post-fix Live Verification run; that workflow is implemented and covered with mock FNN integration tests.
 
 Reports include an evidence-source section that names the trace source, replay mode, live mutation state, observed RPC
@@ -110,20 +110,20 @@ Hosted deployments should set `FIBERTRACEBOX_API_KEY`. Write endpoints accept th
 In production, write endpoints refuse to run without `FIBERTRACEBOX_API_KEY`. Local demos can opt into the same requirement with
 `FIBERTRACEBOX_REQUIRE_API_KEY=true`.
 
-The API key is never copied into a browser cookie. Set `FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX=true` only when judges should be able
-to run deterministic scenarios. This exception does not authorize Fiber RPC sends or complete live reports. Public live trace
+The API key is never copied into a browser cookie. `FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX=true` permits evaluators to run
+deterministic scenarios without authentication. This exception does not authorize Fiber RPC sends or complete live reports. Public live trace
 responses redact node/channel/payment identifiers, balances, and raw RPC error data.
 
-Public judge-facing FNN checks can be enabled separately with `FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN=true`. The route forces
+Public evaluator-facing FNN checks can be enabled separately with `FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN=true`. The route forces
 `dry_run: true` regardless of the request body, applies `FIBERTRACEBOX_PUBLIC_LIVE_RATE_LIMIT_MAX` (default 10 per minute), and
 sanitizes its response. This does not grant replay, verification, report, or live-send authorization.
 
-In short: live sends, Live Verification, complete operator evidence, complete live reports, and protected write operations still
-require the API key. Never distribute the operator API key to judges or embed it in client-side code.
+Live sends, Live Verification, complete operator evidence, complete live reports, and protected write operations require the API
+key. The operator API key must not be distributed to evaluators or embedded in client-side code.
 
-For owner-operated dashboard testing, use the masked Operator Access control before recording. The key remains in session storage
-for the current browser tab and is removed by the Lock action. Unlocking does not itself enable fund movement: the server must also
-set `FIBER_RPC_ALLOW_LIVE_PAYMENTS=true`, the dry-run control must be disabled intentionally, and the browser asks for confirmation.
+The masked **Operator Access** control supports authenticated dashboard testing. The key remains in session storage for the
+current browser tab and is removed by the **Lock** action. Unlocking does not itself enable fund movement: the server must also
+set `FIBER_RPC_ALLOW_LIVE_PAYMENTS=true`, the operator must disable the dry-run control, and the browser requires confirmation.
 
 Rate limits are in-memory per app process and configurable with:
 

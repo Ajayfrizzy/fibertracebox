@@ -27,10 +27,10 @@ The full demo runs `route-capacity`, replays it, and shows a report. The expecte
 
 ## How This Connects To Live Fiber
 
-Sandbox scenarios are deterministic so judges and operators can reproduce the same failure story every time. Live Fiber mode
+Sandbox scenarios are deterministic so evaluators and operators can reproduce the same failure story every time. Live Fiber mode
 then proves the integration path against real FNN nodes: invoice parsing, payment hash, payment status, channel snapshots,
-and report export. Use sandbox replay to explain the diagnostic method, then use the live evidence trace to show that the
-same trace/report surface works against actual Fiber infrastructure.
+and report export. Sandbox replay demonstrates the diagnostic method; the live evidence trace demonstrates that the same
+trace/report surface works against actual Fiber infrastructure.
 
 The repository proof is a historical real live-send capture from two local Fiber testnet nodes: Node1 sender and Node2 receiver.
 The hosted deployment currently uses the Node1 environment only and reports a different pubkey from the historical capture. Live Verification is available when a receiver or fresh invoice source

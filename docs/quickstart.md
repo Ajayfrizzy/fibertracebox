@@ -23,13 +23,14 @@ FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX=true
 
 The server secret must never be placed in browser code, cookies, screenshots, or public submission material.
 
-The project owner can use the dashboard's masked Operator Access control for protected testing without placing the key in a CLI
-command or recording. Unlock before recording, confirm the key field has disappeared, and use Lock when finished.
+The dashboard provides a masked **Operator Access** control for protected testing without placing the key in a CLI command or
+visible page content. The key is held in session storage for the current browser tab, the input is removed after unlocking, and
+the **Lock** action clears the session value.
 
 ## Optional Live Fiber Node
 
-FiberTracebox does not start a Fiber Network Node for you. Run FNN separately, then point FiberTracebox at its JSON-RPC
-endpoint.
+FiberTracebox does not manage the Fiber Network Node process. FNN must run separately, with FiberTracebox configured to use its
+JSON-RPC endpoint.
 
 From the upstream `nervosnetwork/fiber` repo, a testnet node is started with the `fnn` binary, a testnet `config.yml`, a
 wallet key under `ckb/key`, and:
@@ -51,8 +52,8 @@ FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
 ```
 
 Restart `npm run dev`, open the dashboard, and check the Live Fiber RPC panel. With `FIBER_RPC_ALLOW_LIVE_PAYMENTS=false`,
-FiberTracebox sends FNN `send_payment` calls with `dry_run: true`. Set `FIBER_RPC_ALLOW_LIVE_PAYMENTS=true` only when you
-intend to send real payments.
+FiberTracebox sends FNN `send_payment` calls with `dry_run: true`. Set `FIBER_RPC_ALLOW_LIVE_PAYMENTS=true` only for an
+intentional operator-authorized real payment.
 
 Real live-node features require real Fiber state: connected peers, open channels, usable liquidity, and a valid invoice. The
 sandbox scenario cards remain deterministic demos; use the Live Fiber RPC panel for FNN-backed payment checks.

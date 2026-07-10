@@ -5,9 +5,9 @@
 FiberTracebox is Sentry-style tracing for CKB Fiber payments. It turns Fiber payment attempts into timelines, failure
 fingerprints, replay evidence, and operator-ready reports.
 
-The hackathon thesis is that Fiber needs diagnostics infrastructure, not only payment execution. A raw FNN response can tell
-you that something failed, but an operator needs a timeline, a fingerprint, the available channel/invoice/graph evidence, and
-the safest next action.
+The hackathon thesis is that Fiber needs diagnostics infrastructure, not only payment execution. A raw FNN response can indicate
+that something failed, but an operator needs a timeline, a fingerprint, the available channel/invoice/graph evidence, and the
+safest next action.
 
 The demo has two parts:
 
@@ -77,7 +77,7 @@ The failed-transaction corpus in `failed-transactions/` contains raw FNN JSON-RP
 - The hosted deployment currently uses the Node1 environment only. Its reported pubkey differs from the historical Node1
   capture, so Node2 and settlement evidence comes strictly from the historical local proof bundle.
 
-## Judge Takeaway
+## Evaluation Summary
 
 FiberTracebox turns scattered Fiber node evidence into a debugging workflow:
 
@@ -87,16 +87,17 @@ FiberTracebox turns scattered Fiber node evidence into a debugging workflow:
 4. Replay likely fixes safely in the deterministic lab.
 5. Export the result as Markdown or JSON for handoff.
 
-## Demo Script
+## Suggested Evaluation Walkthrough
 
 1. Open the dashboard.
 2. Run the sandbox `route-capacity` scenario.
-3. Open the failed trace and show the lifecycle timeline.
-4. Run Replay-to-Fix and show the recommendation.
+3. Inspect the failed trace and lifecycle timeline.
+4. Run Replay-to-Fix and inspect the recommendation.
 5. Export the Markdown report.
-6. Open the live Fiber trace.
-7. Show FNN pubkeys, payment hash, channel evidence, `Success`, and `Paid` status.
-8. Close with: sandbox gives reproducible diagnostics; live mode proves real Fiber node integration.
+6. Open the historical live Fiber trace.
+7. Inspect the FNN pubkeys, payment hash, channel evidence, `Success`, and `Paid` status.
+8. Confirm the evaluation distinction: sandbox mode provides reproducible diagnostics, while live mode demonstrates real Fiber
+   node integration.
 
-The captured `Success` and `Paid` values prove the historical live settlement. Do not present the currently hosted single-node
-connection as a currently running two-node environment.
+The captured `Success` and `Paid` values prove the historical live settlement. The currently hosted single-node connection is
+separate from that historical two-node environment and is not evidence of a currently running two-node deployment.
