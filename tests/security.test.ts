@@ -1,15 +1,22 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { assertSandboxDemoAccess, hasApiKeyAccess } from "@/lib/api/security";
+import { assertPublicLiveDryRunAccess, assertSandboxDemoAccess, hasApiKeyAccess } from "@/lib/api/security";
 import { toPublicTrace } from "@/lib/api/public-trace";
 import type { PaymentTrace } from "@/lib/types/domain";
 
 describe("API security", () => {
   const previousKey = process.env.FIBERTRACEBOX_API_KEY;
   const previousPublicSandbox = process.env.FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX;
+  const previousPublicLive = process.env.FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN;
 
   afterEach(() => {
     restoreEnv("FIBERTRACEBOX_API_KEY", previousKey);
     restoreEnv("FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX", previousPublicSandbox);
+    restoreEnv("FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN", previousPublicLive);
+  });
+
+  it("allows public live checks only through explicit dry-run configuration", () => {
+    process.env.FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN = "true";
+    expect(() => assertPublicLiveDryRunAccess(new Request("http://localhost/api/traces"))).not.toThrow();
   });
 
   it("never treats cookies as API credentials", () => {

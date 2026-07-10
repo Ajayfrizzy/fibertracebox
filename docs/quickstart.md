@@ -23,6 +23,9 @@ FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX=true
 
 The server secret must never be placed in browser code, cookies, screenshots, or public submission material.
 
+The project owner can use the dashboard's masked Operator Access control for protected testing without placing the key in a CLI
+command or recording. Unlock before recording, confirm the key field has disappeared, and use Lock when finished.
+
 ## Optional Live Fiber Node
 
 FiberTracebox does not start a Fiber Network Node for you. Run FNN separately, then point FiberTracebox at its JSON-RPC

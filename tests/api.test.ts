@@ -117,6 +117,31 @@ describe("API routes", () => {
     expect(replayJson.recommended.scenario).toBe("restored_peer");
   });
 
+  it("allows public replay for sandbox traces when the public demo is enabled", async () => {
+    const previousPublicSandbox = process.env.FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX;
+    const previousKey = process.env.FIBERTRACEBOX_API_KEY;
+    process.env.FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX = "true";
+    process.env.FIBERTRACEBOX_API_KEY = "private-key-not-sent";
+
+    try {
+      const scenarioResponse = await scenarioPost(new Request("http://localhost/api/scenarios/run", {
+        method: "POST",
+        body: JSON.stringify({ scenario: "route-capacity" })
+      }));
+      const scenarioJson = await scenarioResponse.json();
+      const replayResponse = await replayPost(new Request("http://localhost/api/traces/id/replay", { method: "POST" }), {
+        params: Promise.resolve({ id: scenarioJson.trace.id })
+      });
+      const replayJson = await replayResponse.json();
+
+      expect(replayResponse.status).toBe(200);
+      expect(replayJson.replayResults.length).toBeGreaterThan(0);
+    } finally {
+      restoreEnv("FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX", previousPublicSandbox);
+      restoreEnv("FIBERTRACEBOX_API_KEY", previousKey);
+    }
+  });
+
   it("rejects replay for successful traces with a clear message", async () => {
     const request = new Request("http://localhost/api/scenarios/run", {
       method: "POST",
@@ -391,6 +416,55 @@ describe("API routes", () => {
     } finally {
       restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
       restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);
+      restoreEnv("FIBER_RPC_URL", previousUrl);
+    }
+  });
+
+  it("allows a public sanitized Fiber check while forcing a dry-run", async () => {
+    const previousEnabled = process.env.FIBER_RPC_ENABLED;
+    const previousLiveEnabled = process.env.FIBER_RPC_LIVE_ENABLED;
+    const previousAllowPayments = process.env.FIBER_RPC_ALLOW_LIVE_PAYMENTS;
+    const previousPublicDryRun = process.env.FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN;
+    const previousKey = process.env.FIBERTRACEBOX_API_KEY;
+    const previousUrl = process.env.FIBER_RPC_URL;
+    process.env.FIBER_RPC_ENABLED = "true";
+    process.env.FIBER_RPC_LIVE_ENABLED = "true";
+    process.env.FIBER_RPC_ALLOW_LIVE_PAYMENTS = "true";
+    process.env.FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN = "true";
+    process.env.FIBERTRACEBOX_API_KEY = "operator-secret";
+    process.env.FIBER_RPC_URL = "http://fiber-rpc.local";
+
+    const targetPubkey = `02${"4".repeat(64)}`;
+    const requests: Array<{ method: string; params?: Array<Record<string, unknown>> }> = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      const body = JSON.parse(String(init?.body));
+      requests.push(body);
+      if (body.method === "node_info") return Response.json({ jsonrpc: "2.0", id: body.id, result: { pubkey: `03${"5".repeat(64)}`, version: "test" } });
+      if (body.method === "list_channels") return Response.json({ jsonrpc: "2.0", id: body.id, result: { channels: [] } });
+      if (body.method === "graph_nodes") return Response.json({ jsonrpc: "2.0", id: body.id, result: { nodes: [] } });
+      if (body.method === "graph_channels") return Response.json({ jsonrpc: "2.0", id: body.id, result: { channels: [] } });
+      return Response.json({ jsonrpc: "2.0", id: body.id, error: { code: -32000, message: "route not found for target" } });
+    });
+
+    try {
+      const response = await tracesPost(new Request("http://localhost/api/traces", {
+        method: "POST",
+        body: JSON.stringify({ targetPubkey, keysend: true, amount: 100, dryRun: false })
+      }));
+      const json = await response.json();
+      const send = requests.find((request) => request.method === "send_payment");
+
+      expect(response.status).toBe(201);
+      expect(send?.params?.[0].dry_run).toBe(true);
+      expect(json.trace.failureFingerprint).toBe("ROUTE_NOT_FOUND");
+      expect(json.trace.receiverNode).not.toBe(targetPubkey);
+      expect(json.diagnosis.fingerprint).toBe("ROUTE_NOT_FOUND");
+    } finally {
+      restoreEnv("FIBER_RPC_ENABLED", previousEnabled);
+      restoreEnv("FIBER_RPC_LIVE_ENABLED", previousLiveEnabled);
+      restoreEnv("FIBER_RPC_ALLOW_LIVE_PAYMENTS", previousAllowPayments);
+      restoreEnv("FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN", previousPublicDryRun);
+      restoreEnv("FIBERTRACEBOX_API_KEY", previousKey);
       restoreEnv("FIBER_RPC_URL", previousUrl);
     }
   });

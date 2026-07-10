@@ -114,6 +114,17 @@ The API key is never copied into a browser cookie. Set `FIBERTRACEBOX_ALLOW_PUBL
 to run deterministic scenarios. This exception does not authorize Fiber RPC sends or complete live reports. Public live trace
 responses redact node/channel/payment identifiers, balances, and raw RPC error data.
 
+Public judge-facing FNN checks can be enabled separately with `FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN=true`. The route forces
+`dry_run: true` regardless of the request body, applies `FIBERTRACEBOX_PUBLIC_LIVE_RATE_LIMIT_MAX` (default 10 per minute), and
+sanitizes its response. This does not grant replay, verification, report, or live-send authorization.
+
+In short: live sends, Live Verification, complete operator evidence, complete live reports, and protected write operations still
+require the API key. Never distribute the operator API key to judges or embed it in client-side code.
+
+For owner-operated dashboard testing, use the masked Operator Access control before recording. The key remains in session storage
+for the current browser tab and is removed by the Lock action. Unlocking does not itself enable fund movement: the server must also
+set `FIBER_RPC_ALLOW_LIVE_PAYMENTS=true`, the dry-run control must be disabled intentionally, and the browser asks for confirmation.
+
 Rate limits are in-memory per app process and configurable with:
 
 - `FIBERTRACEBOX_RATE_LIMIT_MAX`

@@ -215,7 +215,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
       throw publicApiError("Keysend payments require amount", 400);
     }
 
-    const dryRun = input.dryRun ?? !this.allowLivePayments;
+    const dryRun = resolveDryRun(input.dryRun, this.allowLivePayments);
     const startedAt = Date.now();
     const traceId = createId("trace");
     const events: TraceEvent[] = [];
@@ -496,7 +496,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
           fee: payment.fee,
           failedError: payment.failed_error,
           invoiceStatus,
-          dryRun: input.dryRun ?? !this.allowLivePayments,
+          dryRun: resolveDryRun(input.dryRun, this.allowLivePayments),
           recoveredFrom: originalMessage
         }
       );
@@ -546,7 +546,7 @@ export class FiberRpcAdapter implements PaymentDataAdapter {
           invoiceRpcMethod: invoiceStatus ? "get_invoice" : undefined,
           status: duplicateStatus,
           invoiceStatus,
-          dryRun: input.dryRun ?? !this.allowLivePayments,
+          dryRun: resolveDryRun(input.dryRun, this.allowLivePayments),
           recoveredFrom: originalMessage
         }
       );
@@ -591,6 +591,10 @@ function buildSendPaymentParams(input: PaymentAttemptInput, dryRun: boolean) {
   if (input.feeLimit !== undefined) params.max_fee_amount = toFiberHexAmount(input.feeLimit, "feeLimit");
 
   return params;
+}
+
+function resolveDryRun(requested: boolean | undefined, allowLivePayments: boolean) {
+  return !allowLivePayments || requested !== false;
 }
 
 function toFiberHexAmount(value: number, field: string): string {

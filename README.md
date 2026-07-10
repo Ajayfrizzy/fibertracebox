@@ -354,6 +354,8 @@ FIBERTRACEBOX_PUBLIC_URL=https://fibertracebox.online
 FIBERTRACEBOX_API_KEY=<your-fibertracebox-api-key>
 FIBERTRACEBOX_REQUIRE_API_KEY=true
 FIBERTRACEBOX_ALLOW_PUBLIC_SANDBOX=true
+FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN=true
+FIBERTRACEBOX_PUBLIC_LIVE_RATE_LIMIT_MAX=10
 FIBERTRACEBOX_TRUST_PROXY=true
 NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
@@ -365,6 +367,20 @@ FIBER_RPC_ALLOW_LIVE_PAYMENTS=false
 ```
 
 Live Fiber RPC should remain private. The hosted demo does not expose a public FNN JSON-RPC endpoint.
+
+`FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN=true` lets judges submit invoice or pubkey checks without receiving the operator API
+key. This path is independently rate-limited, forces `dry_run: true` even if the request asks for a live send, and returns
+sanitized evidence. Keep `FIBER_RPC_ALLOW_LIVE_PAYMENTS=false` for the public deployment.
+
+### Security Boundary
+
+Public access covers only deterministic sandbox actions and rate-limited, sanitized FNN dry-runs. Live sends, Live Verification,
+complete operator evidence, complete live reports, and other protected write operations require the FiberTracebox API key.
+
+The dashboard includes a masked **Operator Access** control. The project owner can enter the configured API key before a demo;
+it is stored only in that browser tab's session storage, the field disappears after unlock, and a Lock action clears it. Never
+type or reveal the key while recording. Real sends additionally require `FIBER_RPC_ALLOW_LIVE_PAYMENTS=true` and an explicit
+confirmation in the dashboard.
 
 Set `FIBERTRACEBOX_TRUST_PROXY=true` only when Caddy/Nginx overwrites `X-Forwarded-For`. Public trace responses redact live
 pubkeys, channel IDs, balances, payment hashes, and raw RPC data. Authenticated API clients receive complete operator evidence.

@@ -15,6 +15,7 @@ export interface HealthResponse {
     adapterReadyOnly: boolean;
     liveEnabled: boolean;
     allowLivePayments?: boolean;
+    publicDryRunsEnabled?: boolean;
     probe?: {
       ok: boolean;
       error?: string;

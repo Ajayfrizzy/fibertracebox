@@ -15,7 +15,7 @@ test("judge can run, inspect, replay, and export the deterministic demo", async 
   expect(report.ok()).toBe(true);
   expect(await report.text()).toContain("# FiberTracebox Report");
 
-  await page.getByRole("link", { name: "Replay Lab" }).click();
+  await page.getByRole("button", { name: /Replay in Lab|Retry Replay/ }).click();
   await expect(page.getByRole("heading", { name: "Replay Lab" })).toBeVisible();
   await expect(page.getByText("Smallest route-capacity fix", { exact: true })).toBeVisible();
 });

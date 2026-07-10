@@ -41,7 +41,8 @@ describe("Fiber RPC adapter integration", () => {
       targetPubkey: "03" + "3".repeat(64),
       keysend: true,
       amount: 100_000_000,
-      asset: "CKB"
+      asset: "CKB",
+      dryRun: false
     });
 
     const send = requests.find((request) => request.method === "send_payment");
@@ -61,5 +62,53 @@ describe("Fiber RPC adapter integration", () => {
       "graph_snapshot",
       "route_dry_run"
     ]);
+  });
+
+  it("allows an explicit live send only when the server enables live payments", async () => {
+    const requests: Array<{ method: string; params?: unknown[] }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body)) as { id: number; method: string; params?: unknown[] };
+      requests.push(request);
+      const result = request.method === "node_info"
+        ? { pubkey: "02" + "1".repeat(64), version: "test" }
+        : request.method === "list_channels"
+          ? { channels: [] }
+          : request.method === "graph_nodes"
+            ? { nodes: [] }
+            : request.method === "graph_channels"
+              ? { channels: [] }
+              : { status: "Created", payment_hash: "0xlive" };
+      return Response.json({ jsonrpc: "2.0", id: request.id, result });
+    }));
+
+    const adapter = new FiberRpcAdapter("http://fnn.test", true);
+    await adapter.runPaymentAttempt({ targetPubkey: "03" + "3".repeat(64), keysend: true, amount: 1, dryRun: false });
+    const send = requests.find((request) => request.method === "send_payment");
+    expect(send?.params).toEqual([{ dry_run: false, target_pubkey: "03" + "3".repeat(64), keysend: true, amount: "0x1" }]);
+  });
+
+  it("forces invoice requests to dry-run when live payments are disabled", async () => {
+    const requests: Array<{ method: string; params?: unknown[] }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body)) as { id: number; method: string; params?: unknown[] };
+      requests.push(request);
+      const result = request.method === "node_info"
+        ? { pubkey: "02" + "1".repeat(64), version: "test" }
+        : request.method === "list_channels"
+          ? { channels: [] }
+          : request.method === "graph_nodes"
+            ? { nodes: [] }
+            : request.method === "graph_channels"
+              ? { channels: [] }
+              : request.method === "parse_invoice"
+                ? {}
+                : { status: "Created", payment_hash: "0xinvoice" };
+      return Response.json({ jsonrpc: "2.0", id: request.id, result });
+    }));
+
+    const adapter = new FiberRpcAdapter("http://fnn.test", false);
+    await adapter.runPaymentAttempt({ invoice: "fibt1freshinvoiceexample", amount: 100, dryRun: false });
+    const send = requests.find((request) => request.method === "send_payment");
+    expect(send?.params).toEqual([{ dry_run: true, invoice: "fibt1freshinvoiceexample", amount: "0x64" }]);
   });
 });

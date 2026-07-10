@@ -21,6 +21,13 @@ export function assertSandboxDemoAccess(request: Request) {
   enforceApiKey(request);
 }
 
+export function assertPublicLiveDryRunAccess(request: Request) {
+  enforceRateLimit(request, "fiber:public-dry-run", "FIBERTRACEBOX_PUBLIC_LIVE_RATE_LIMIT_MAX", 10);
+  if (process.env.FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN !== "true") {
+    throw publicApiError("Unauthorized", 401);
+  }
+}
+
 export function hasApiKeyAccess(request: Request): boolean {
   const configuredKey = process.env.FIBERTRACEBOX_API_KEY?.trim();
   const providedKey = getProvidedApiKey(request);
@@ -44,8 +51,8 @@ function enforceApiKey(request: Request) {
   }
 }
 
-function enforceRateLimit(request: Request, scope: string) {
-  const limit = readPositiveInteger(process.env.FIBERTRACEBOX_RATE_LIMIT_MAX, 60);
+function enforceRateLimit(request: Request, scope: string, limitVariable = "FIBERTRACEBOX_RATE_LIMIT_MAX", fallbackLimit = 60) {
+  const limit = readPositiveInteger(process.env[limitVariable], fallbackLimit);
   const windowMs = readPositiveInteger(process.env.FIBERTRACEBOX_RATE_LIMIT_WINDOW_MS, 60_000);
   const now = Date.now();
   const key = `${scope}:${getClientAddress(request)}`;

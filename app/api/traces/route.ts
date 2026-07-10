@@ -1,11 +1,10 @@
 import { getPaymentAdapter } from "@/lib/adapters";
 import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { getDiagnosis, listTraces, saveDiagnosis, saveTrace } from "@/lib/api/repository";
-import { jsonError, jsonOk } from "@/lib/api/http";
-import { assertWriteAccess } from "@/lib/api/security";
+import { jsonError, jsonOk, publicApiError } from "@/lib/api/http";
+import { assertPublicLiveDryRunAccess, assertWriteAccess, hasApiKeyAccess } from "@/lib/api/security";
 import { parsePaymentAttemptInput } from "@/lib/api/validation";
-import { hasApiKeyAccess } from "@/lib/api/security";
-import { toPublicTraceSummary } from "@/lib/api/public-trace";
+import { toPublicTrace, toPublicTraceSummary } from "@/lib/api/public-trace";
 
 export async function GET(request: Request) {
   try {
@@ -31,10 +30,21 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    assertWriteAccess(request, "traces:create");
     const input = await parsePaymentAttemptInput(request);
+    const authenticated = hasApiKeyAccess(request);
+    const publicDryRun = !authenticated && process.env.FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN === "true";
+    if (authenticated) {
+      assertWriteAccess(request, "traces:create");
+    } else if (publicDryRun) {
+      assertPublicLiveDryRunAccess(request);
+    } else {
+      assertWriteAccess(request, "traces:create");
+    }
     const adapter = getPaymentAdapter();
-    const trace = await adapter.runPaymentAttempt(input);
+    if (adapter.getMode() !== "fiber-rpc") {
+      throw publicApiError("Manual trace creation requires Fiber RPC mode", 503);
+    }
+    const trace = await adapter.runPaymentAttempt(publicDryRun ? { ...input, dryRun: true } : input);
     await saveTrace(trace);
 
     const diagnosis = diagnoseTrace(trace);
@@ -42,7 +52,10 @@ export async function POST(request: Request) {
       await saveDiagnosis(trace.id, diagnosis);
     }
 
-    return jsonOk({ trace, diagnosis: diagnosis ?? (await getDiagnosis(trace.id)) }, { status: 201 });
+    return jsonOk(
+      { trace: publicDryRun ? toPublicTrace(trace) : trace, diagnosis: diagnosis ?? (await getDiagnosis(trace.id)) },
+      { status: 201 }
+    );
   } catch (error) {
     return jsonError(error);
   }

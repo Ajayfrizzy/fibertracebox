@@ -124,6 +124,7 @@ export default async function HomePage() {
           <LivePaymentRunner
             liveEnabled={fiberRpc.liveEnabled}
             allowLivePayments={fiberRpc.allowLivePayments}
+            publicDryRunsEnabled={fiberRpc.publicDryRunsEnabled}
             probe={
               fiberRpcProbe
                 ? {

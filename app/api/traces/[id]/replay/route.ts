@@ -1,7 +1,7 @@
 import { runReplayToFix, recommendSmallestFix } from "@/lib/core/replay-engine";
 import { getTrace, saveReplayResults } from "@/lib/api/repository";
 import { jsonError, jsonOk, publicApiError } from "@/lib/api/http";
-import { assertWriteAccess } from "@/lib/api/security";
+import { assertSandboxDemoAccess, assertWriteAccess } from "@/lib/api/security";
 import { parseTraceId } from "@/lib/api/validation";
 import type { ReplayResponse } from "@/lib/types/api";
 
@@ -13,7 +13,6 @@ interface RouteContext {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    assertWriteAccess(request, "traces:replay");
     const { id } = await context.params;
     const traceId = parseTraceId(id);
     const trace = await getTrace(traceId);
@@ -22,11 +21,14 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     if (trace.mode === "fiber-rpc") {
+      assertWriteAccess(request, "traces:replay");
       throw publicApiError(
         "Replay-to-Fix is unavailable for live Fiber traces; use the captured evidence as an operator diagnosis",
         409
       );
     }
+
+    assertSandboxDemoAccess(request);
 
     if (trace.status !== "failed" && trace.status !== "replayed") {
       throw publicApiError("Replay-to-Fix only runs for failed traces", 400);

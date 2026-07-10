@@ -9,6 +9,11 @@ Returns app status, database mode, payment adapter mode, and Fiber RPC enablemen
 Creates a manual trace or sandbox trace.
 
 Hosted write requests require `x-api-key` or `Authorization: Bearer <key>` when `FIBERTRACEBOX_API_KEY` is configured.
+When `FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN=true`, unauthenticated invoice and pubkey requests are accepted through a separate
+rate limit, forcibly converted to dry-runs, and returned with sanitized live evidence.
+
+Public dry-run access does not authorize live sends, Live Verification, complete operator evidence, complete Fiber RPC reports,
+or other protected writes. Those operations require `x-api-key` or `Authorization: Bearer <key>`.
 
 ```json
 {

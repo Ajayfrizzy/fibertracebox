@@ -19,7 +19,8 @@ export function getFiberRpcStatus() {
     configured,
     adapterReadyOnly: requested && configured && !isFiberRpcLiveEnabled(),
     liveEnabled: isFiberRpcLiveEnabled(),
-    allowLivePayments: process.env.FIBER_RPC_ALLOW_LIVE_PAYMENTS === "true"
+    allowLivePayments: process.env.FIBER_RPC_ALLOW_LIVE_PAYMENTS === "true",
+    publicDryRunsEnabled: process.env.FIBERTRACEBOX_ALLOW_PUBLIC_LIVE_DRY_RUN === "true"
   };
 }
 
