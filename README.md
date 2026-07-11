@@ -159,7 +159,7 @@ FiberTracebox currently supports:
 - Millisecond-level payment timelines.
 - Failure fingerprint classification.
 - Diagnosis catalog with likely causes and suggested fixes.
-- Replay-to-Fix engine for sandbox traces.
+- Replay-to-Fix execution for sandbox traces and ranked fix recommendations for live traces.
 - Smallest successful fix recommendation.
 - Replay comparison view.
 - Trace search, filtering, and sorting.
@@ -176,16 +176,17 @@ FiberTracebox currently supports:
 | Capability | Sandbox mode | Live Fiber RPC mode |
 | --- | --- | --- |
 | Failure scenarios | Deterministic simulations | Real FNN failures when returned by RPC |
-| Replay-to-Fix | Safe replay lab | Evidence-only; no automatic live route mutation |
+| Replay-to-Fix | Safe replay lab with executed deterministic results | Ranked suggestions; no automatic live route mutation |
 | Node identity | Simulated labels | Real `node_info` values |
 | Channel state | Simulated conditions | Real `list_channels` snapshot |
 | Graph evidence | Simulated route model | Captured graph/channel availability when available |
 | Payment settlement | Simulated | Dry-run by default; live send only when explicitly enabled |
 | Reports | Full diagnosis and replay recommendation | Live evidence, fingerprint, provenance, and safety disclosure |
 
-This safety boundary is intentional: live traces are evidence, while sandbox traces are the replay laboratory.
+This safety boundary is intentional: sandbox traces are the replay laboratory, while live traces combine real evidence with
+non-executed fix recommendations and linked FNN verification.
 
-Live Fiber failures are never marked as replay successes. Replay-to-Fix accepts sandbox traces only. A live report can recommend
+Live Fiber failures are never marked as replay successes. The replay execution endpoint accepts sandbox traces only. A live report can recommend
 operator actions, but it cannot claim that an unexecuted amount, route, or liquidity change settled.
 
 Live Verification is the real-node counterpart: after the operator applies a fix, it executes another FNN dry-run and links the
@@ -202,6 +203,10 @@ For a failed sandbox trace, FiberTracebox can replay controlled strategy changes
 - alternate route
 - restored peer
 - higher fee limit
+
+For a failed live trace, the same feature produces ranked suggested changes from the observed FNN fingerprint. These suggestions
+are not marked successful until the operator applies a change and records a linked server-enforced FNN dry-run through Live
+Verification.
 - longer timeout
 - split payment
 

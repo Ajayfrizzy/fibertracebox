@@ -56,12 +56,13 @@ FiberTracebox placed behind the deployment's application authentication and API 
 
 ## Replay Safety Boundary
 
-Replay-to-Fix is deterministic and safe in sandbox mode. In live Fiber mode, FiberTracebox captures real node, channel,
-invoice, graph, and payment evidence, but does not mutate live routes or try alternate live conditions. That boundary is
-intentional: changing live payment conditions can move funds, alter channel state, or create duplicate payment sessions.
+Replay-to-Fix executes deterministic strategies in sandbox mode. In live Fiber mode, it converts the diagnosed real failure into
+ranked suggested fixes and verification steps, but does not mutate live routes or try alternate live conditions automatically.
+That boundary is intentional: changing live payment conditions can move funds, alter channel state, or create duplicate payment
+sessions.
 
-For live traces, the report should be read as operator evidence. For sandbox traces, the report should be read as replayed
-diagnosis and smallest-fix analysis.
+For live traces, suggested fixes remain recommendations until a linked FNN Live Verification dry-run records the outcome. For
+sandbox traces, the report contains executed deterministic replay results and smallest-fix analysis.
 
 ## Live Verification
 
@@ -97,7 +98,7 @@ receiver presence when known, and usable captured channel counts. The raw two-no
 | Capability | Sandbox | Live Fiber RPC |
 | --- | --- | --- |
 | Failure generation | Deterministic model | Real FNN result or error |
-| Replay-to-Fix | Simulated safely | Not executed against FNN |
+| Replay-to-Fix | Strategies executed in deterministic model | Ranked recommendations; outcomes require FNN Live Verification |
 | Channel state | Scenario model | `list_channels` snapshot |
 | Graph state | Scenario model | `graph_nodes` / `graph_channels` snapshot when available |
 | Payment send | Simulated | Dry-run by default; live-send only with explicit opt-in |

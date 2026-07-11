@@ -72,8 +72,9 @@ The failed-transaction corpus in `failed-transactions/` contains raw FNN JSON-RP
 - The live evidence includes node pubkeys, Fiber version, channel readiness, invoice amount, payment hash, final sender status,
   and final receiver invoice status.
 - The exported report gives operators a portable artifact for debugging and handoff.
-- Replay-to-Fix runs only in the deterministic sandbox. Live Verification can link a later, server-enforced FNN dry-run after an
-  operator applies a fix; no completed Live Verification capture is claimed because Node2 is not currently running.
+- Replay-to-Fix executes controlled strategies only in the deterministic sandbox. For live failures it generates suggested fixes,
+  and Live Verification can link a later, server-enforced FNN dry-run after an operator applies one; no completed Live
+  Verification capture is claimed because Node2 is not currently running.
 - The hosted deployment currently uses the Node1 environment only. Its reported pubkey differs from the historical Node1
   capture, so Node2 and settlement evidence comes strictly from the historical local proof bundle.
 

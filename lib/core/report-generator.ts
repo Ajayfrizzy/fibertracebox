@@ -2,12 +2,14 @@ import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { formatRawTraceAmount, formatTraceAmount } from "@/lib/core/amount-format";
 import { extractLiveFiberEvidence, formatEvidenceAmount } from "@/lib/core/live-fiber-evidence";
 import { createReplayRecommendation, recommendSmallestFix } from "@/lib/core/replay-engine";
+import { createLiveFixRecommendations } from "@/lib/core/live-fix-recommendations";
 import type { PaymentTrace, TraceReport } from "@/lib/types/domain";
 
 export function generateReport(trace: PaymentTrace): TraceReport {
   const diagnosis = diagnoseTrace(trace);
   const smallestFix = recommendSmallestFix(trace.replayResults);
   const recommendation = createReplayRecommendation(trace, trace.replayResults);
+  const liveFixRecommendations = createLiveFixRecommendations(trace, diagnosis);
   const suggestedNextActions =
     trace.status === "success" && !diagnosis
       ? ["No failure action is required. Archive this trace/report as live payment evidence."]
@@ -41,7 +43,9 @@ export function generateReport(trace: PaymentTrace): TraceReport {
             `| ${result.scenario} | ${result.changedCondition} | ${result.result} | ${result.latencyMs} | ${result.recommended ? "yes" : "no"} |`
         )
         .join("\n")
-    : "| Not run | Not run | Not run | - | - |";
+    : trace.mode === "fiber-rpc"
+      ? "| Not executed | Live safety boundary | Suggested changes require FNN Live Verification | - | - |"
+      : "| Not run | Not run | Not run | - | - |";
   const liveEvidenceSection = liveEvidence ? renderLiveEvidenceMarkdown(liveEvidence) : "";
 
   const markdown = `# FiberTracebox Report
@@ -89,9 +93,11 @@ ${eventRows}
 | --- | --- | --- | --- | --- |
 ${replayRows}
 
-## Smallest-Fix Recommendation
+${renderLiveFixRecommendations(liveFixRecommendations)}
 
-${recommendation ? `${recommendation.title}: ${recommendation.primaryAction}` : smallestFix ? `${smallestFix.changedCondition}: ${smallestFix.explanation}` : trace.status === "success" ? "No replay fix is required for a successful trace." : "Run replay to produce a smallest-fix recommendation."}
+## ${trace.mode === "fiber-rpc" ? "Replay-to-Fix Recommendation" : "Smallest-Fix Recommendation"}
+
+${recommendation ? `${recommendation.title}: ${recommendation.primaryAction}` : smallestFix ? `${smallestFix.changedCondition}: ${smallestFix.explanation}` : liveFixRecommendations[0] ? `${liveFixRecommendations[0].title} This is a suggested live fix; verify it with a new server-enforced FNN dry-run.` : trace.status === "success" ? "No replay fix is required for a successful trace." : "No verified fix recommendation is available for this failure."}
 
 ${recommendation?.operatorAction ?? ""}
 
@@ -113,6 +119,7 @@ ${disclosure}
       diagnosis,
       smallestFix,
       recommendation,
+      liveFixRecommendations,
       liveEvidence,
       liveVerifications,
       evidenceProvenance,
@@ -120,6 +127,20 @@ ${disclosure}
       disclosure
     }
   };
+}
+
+function renderLiveFixRecommendations(recommendations: TraceReport["json"]["liveFixRecommendations"]) {
+  if (!recommendations.length) return "";
+  const rows = recommendations
+    .map((item) => `| ${item.recommended ? "primary" : "alternative"} | ${item.strategy ?? "operator_action"} | ${item.title} | ${item.verificationStep} |`)
+    .join("\n");
+  return `## Live Replay-to-Fix Recommendations
+
+These recommendations are derived from the observed FNN failure. They were not executed against the node.
+
+| priority | strategy | suggested change | verification step |
+| --- | --- | --- | --- |
+${rows}`;
 }
 
 function extractLiveVerifications(trace: PaymentTrace): TraceReport["json"]["liveVerifications"] {
@@ -225,7 +246,7 @@ function buildEvidenceProvenance(
   const replayMode =
     trace.mode === "sandbox"
       ? "deterministic sandbox replay"
-      : "live evidence capture only; replay changes are not executed against FNN";
+      : "live fix recommendations with changes verified only through a separate FNN dry-run";
   const notes =
     trace.mode === "sandbox"
       ? [
@@ -237,6 +258,7 @@ function buildEvidenceProvenance(
           liveEvidence?.payment?.dryRun || dryRunRequested
             ? "Dry-run mode requests route/payment checks without intentionally sending a new live payment."
             : "Live send mode was enabled for this trace.",
+          "Live Replay-to-Fix recommendations are not execution evidence until a linked Live Verification dry-run is recorded.",
           "Live Verification uses a new server-enforced dry-run and never represents sandbox replay as live evidence."
         ];
 

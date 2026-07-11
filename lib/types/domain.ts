@@ -82,6 +82,15 @@ export interface ReplayRecommendation {
   alternatives: ReplayResult[];
 }
 
+export interface LiveFixRecommendation {
+  id: string;
+  title: string;
+  strategy?: ReplayStrategy;
+  status: "suggested";
+  recommended: boolean;
+  verificationStep: string;
+}
+
 export interface PaymentTrace {
   id: string;
   createdAt: string;
@@ -148,6 +157,7 @@ export interface TraceReport {
     diagnosis?: Diagnosis;
     smallestFix?: ReplayResult;
     recommendation?: ReplayRecommendation;
+    liveFixRecommendations: LiveFixRecommendation[];
     liveEvidence?: unknown;
     liveVerifications: Array<{
       verificationTraceId: string;

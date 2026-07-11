@@ -111,7 +111,7 @@ export default function DocsPage() {
         <ul className="mt-3 space-y-2 text-sm text-gray-700">
           <li>Run your Fiber node separately and keep its JSON-RPC endpoint private.</li>
           <li>Use valid invoices, connected peers, open channels, and sufficient liquidity.</li>
-          <li>Replay-to-Fix accepts sandbox traces only; it never presents simulated outcomes as live FNN results.</li>
+          <li>Replay-to-Fix executes controlled strategies for sandbox traces. Live traces receive suggested fix plans whose outcomes are recorded only through FNN Live Verification.</li>
           <li>Live Verification links a corrected, server-enforced FNN dry-run when a receiver or fresh invoice is available.</li>
           <li>Use the Live Fiber RPC panel for FNN-backed checks and sandbox scenarios for synthetic demos.</li>
         </ul>

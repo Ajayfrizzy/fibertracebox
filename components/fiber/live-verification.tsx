@@ -9,9 +9,10 @@ import type { LiveVerificationResult, TraceEvent } from "@/lib/types/domain";
 interface LiveVerificationProps {
   traceId: string;
   events: TraceEvent[];
+  recommendedAction?: string;
 }
 
-export function LiveVerification({ traceId, events }: LiveVerificationProps) {
+export function LiveVerification({ traceId, events, recommendedAction }: LiveVerificationProps) {
   const [mode, setMode] = useState<"invoice" | "pubkey">("invoice");
   const [invoice, setInvoice] = useState("");
   const [targetPubkey, setTargetPubkey] = useState("");
@@ -58,7 +59,7 @@ export function LiveVerification({ traceId, events }: LiveVerificationProps) {
   const missingTarget = mode === "invoice" ? !invoice.trim() : !targetPubkey.trim() || !amount.trim();
 
   return (
-    <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+    <section id="live-verification" className="scroll-mt-24 rounded-lg border border-line bg-white p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-panel text-ckb"><RadioTower size={20} /></span>
         <div>
@@ -69,6 +70,12 @@ export function LiveVerification({ traceId, events }: LiveVerificationProps) {
           </p>
         </div>
       </div>
+
+      {recommendedAction && (
+        <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          <span className="font-semibold">Recommended change:</span> {recommendedAction}
+        </div>
+      )}
 
       <div className="mt-4 inline-grid grid-cols-2 rounded-md border border-line bg-panel p-1 text-sm font-semibold">
         {(["invoice", "pubkey"] as const).map((value) => (

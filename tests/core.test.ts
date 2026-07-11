@@ -6,9 +6,60 @@ import { generateReport } from "@/lib/core/report-generator";
 import { createReplayRecommendation, recommendSmallestFix, runReplayToFix } from "@/lib/core/replay-engine";
 import { formatTraceCreatedAt } from "@/lib/core/time-format";
 import { evaluateLiveVerification } from "@/lib/core/live-verification";
+import { createLiveFixRecommendations } from "@/lib/core/live-fix-recommendations";
 import type { FailureFingerprint, PaymentTrace } from "@/lib/types/domain";
 
 describe("FiberTracebox core", () => {
+  it.each([
+    ["INVOICE_INVALID", "fresh_invoice"],
+    ["ROUTE_CAPACITY_INSUFFICIENT", "smaller_amount"],
+    ["FEE_LIMIT_TOO_LOW", "higher_fee_limit"],
+    ["PEER_OFFLINE_ROUTE_UNAVAILABLE", "restored_peer"]
+  ] as const)("creates live Replay-to-Fix recommendations for %s", (fingerprint, expectedStrategy) => {
+    const trace: PaymentTrace = {
+      id: `trace_${fingerprint.toLowerCase()}`,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      mode: "fiber-rpc",
+      senderNode: "sender",
+      receiverNode: "receiver",
+      amount: 100,
+      asset: "Fibt",
+      status: "failed",
+      latencyMs: 10,
+      failureFingerprint: fingerprint,
+      events: [],
+      replayResults: []
+    };
+    const diagnosis = diagnoseTrace(trace);
+    const recommendations = createLiveFixRecommendations(trace, diagnosis);
+
+    expect(recommendations.length).toBeGreaterThan(0);
+    expect(recommendations[0]).toMatchObject({ status: "suggested", recommended: true, strategy: expectedStrategy });
+    expect(recommendations[0].verificationStep).toContain("FNN");
+    expect(trace.replayResults).toEqual([]);
+  });
+
+  it("limits an unclassified live failure to generic operator recommendations", () => {
+    const trace: PaymentTrace = {
+      id: "trace_unknown",
+      createdAt: "2026-07-11T00:00:00.000Z",
+      mode: "fiber-rpc",
+      senderNode: "sender",
+      receiverNode: "receiver",
+      amount: 100,
+      asset: "Fibt",
+      status: "failed",
+      latencyMs: 10,
+      failureFingerprint: "UNKNOWN_FIBER_RPC_FAILURE",
+      events: [],
+      replayResults: []
+    };
+
+    const recommendations = createLiveFixRecommendations(trace, diagnoseTrace(trace));
+    expect(recommendations).toHaveLength(2);
+    expect(recommendations[0].title).toContain("sanitized RPC error");
+    expect(createLiveFixRecommendations(trace, undefined)).toEqual([]);
+  });
   it("classifies linked live verification outcomes from actual trace results", () => {
     const original: PaymentTrace = {
       id: "trace_original", createdAt: "2026-07-10T00:00:00.000Z", mode: "fiber-rpc", senderNode: "sender",
@@ -302,6 +353,11 @@ describe("FiberTracebox core", () => {
     expect(report.markdown).toContain("Observed failure stage: fiber_rpc_error");
     expect(report.markdown).toContain("Failed RPC method: send_payment");
     expect(report.markdown).toContain("FNN error code: -32000");
+    expect(report.markdown).toContain("## Live Replay-to-Fix Recommendations");
+    expect(report.markdown).toContain("These recommendations are derived from the observed FNN failure. They were not executed against the node.");
+    expect(report.markdown).toContain("Increase the fee limit");
+    expect(report.json.liveFixRecommendations[0]).toMatchObject({ status: "suggested", recommended: true, strategy: "higher_fee_limit" });
+    expect(report.json.trace.replayResults).toEqual([]);
     expect(report.json.evidenceProvenance.observedFailure).toMatchObject({
       stage: "fiber_rpc_error",
       fingerprint: "FEE_LIMIT_TOO_LOW",

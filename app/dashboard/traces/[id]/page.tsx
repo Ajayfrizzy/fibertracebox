@@ -6,12 +6,14 @@ import { Timeline } from "@/components/traces/timeline";
 import { StatusBadge } from "@/components/traces/status-badge";
 import { LiveFiberEvidence } from "@/components/traces/live-fiber-evidence";
 import { ReplayResults } from "@/components/replay/replay-results";
+import { LiveFixRecommendations } from "@/components/replay/live-fix-recommendations";
 import { ReplayActionButton } from "@/components/replay/replay-actions";
 import { ReportActions } from "@/components/reports/report-actions";
 import { LiveVerification } from "@/components/fiber/live-verification";
 import { formatRawTraceAmount, formatTraceAmount } from "@/lib/core/amount-format";
 import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { generateReport } from "@/lib/core/report-generator";
+import { createLiveFixRecommendations } from "@/lib/core/live-fix-recommendations";
 import { getDiagnosis, getTrace, saveDiagnosis } from "@/lib/api/repository";
 import { toPublicTrace } from "@/lib/api/public-trace";
 
@@ -37,6 +39,7 @@ export default async function TraceDetailPage({ params }: TraceDetailPageProps) 
     }
   }
   const report = generateReport(trace);
+  const liveFixRecommendations = createLiveFixRecommendations(trace, diagnosis);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -91,7 +94,7 @@ export default async function TraceDetailPage({ params }: TraceDetailPageProps) 
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_0.85fr]">
         <Timeline events={trace.events} />
-        <ReplayResults results={trace.replayResults} />
+        {trace.mode === "fiber-rpc" ? <LiveFixRecommendations recommendations={liveFixRecommendations} /> : <ReplayResults results={trace.replayResults} />}
       </section>
 
       <div className="mt-6">
@@ -99,7 +102,7 @@ export default async function TraceDetailPage({ params }: TraceDetailPageProps) 
       </div>
 
       {trace.mode === "fiber-rpc" && trace.status === "failed" && (
-        <div className="mt-6"><LiveVerification traceId={trace.id} events={trace.events} /></div>
+        <div className="mt-6"><LiveVerification traceId={trace.id} events={trace.events} recommendedAction={liveFixRecommendations[0]?.title} /></div>
       )}
 
       <section className="mt-6 rounded-lg border border-line bg-white p-5 shadow-sm">
