@@ -96,7 +96,7 @@ describe("FiberTracebox core", () => {
     const diagnosis = diagnoseTrace(trace);
 
     expect(diagnosis?.fingerprint).toBe("ROUTE_CAPACITY_INSUFFICIENT");
-    expect(diagnosis?.suggestedFixes).toContain("Split the payment across multiple paths");
+    expect(diagnosis?.suggestedFixes).toContain("Use an alternate route with enough capacity for the full payment");
     expect(diagnosis?.confidence).toBe("high");
   });
 
@@ -120,7 +120,7 @@ describe("FiberTracebox core", () => {
 
     expect(results.some((result) => result.result === "failed")).toBe(true);
     expect(results.some((result) => result.result === "success")).toBe(true);
-    expect(recommended?.scenario).toBe("split_payment");
+    expect(recommended?.scenario).toBe("reduced_amount_64");
     expect(results.find((result) => result.recommended)?.id).toBe(recommended?.id);
   });
 
@@ -146,7 +146,9 @@ describe("FiberTracebox core", () => {
     expect(byScenario.increased_outbound_capacity.changedCondition).toContain("180 CKB");
     expect(byScenario.alternate_route.latencyMs).toBe(73);
     expect(byScenario.split_payment.changedCondition).toContain("250 CKB + 250 CKB");
-    expect(recommendation?.primaryAction).toContain("Split the payment");
+    expect(byScenario.split_payment.result).toBe("failed");
+    expect(byScenario.split_payment.explanation).toContain("full 500 CKB payment is not completed");
+    expect(recommendation?.primaryAction).toContain("partial payment");
     expect(recommendation?.operatorAction).toContain("180 CKB");
   });
 
@@ -240,9 +242,9 @@ describe("FiberTracebox core", () => {
     const report = generateReport(trace);
 
     expect(report.markdown).toContain("Smallest route-capacity fix");
-    expect(report.markdown).toContain("Split the payment");
+    expect(report.markdown).toContain("partial payment");
     expect(report.markdown).toContain("add at least 180 CKB outbound route capacity");
-    expect(report.json.recommendation?.primaryResult?.scenario).toBe("split_payment");
+    expect(report.json.recommendation?.primaryResult?.scenario).toBe("reduced_amount_64");
   });
 
   it("classifies real Fiber-style RPC failures", () => {

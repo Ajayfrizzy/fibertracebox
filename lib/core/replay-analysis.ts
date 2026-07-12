@@ -27,21 +27,18 @@ export function createReplayRecommendation(trace: PaymentTrace, results: ReplayR
   if (trace.failureFingerprint === "ROUTE_CAPACITY_INSUFFICIENT") {
     const amount64 = Math.floor(trace.amount * 0.64);
     const deficit = capacityDeficit(trace);
-    const split = results.find((result) => result.scenario === "split_payment" && result.result === "success");
     const reduced = results.find((result) => result.scenario === "reduced_amount_64" && result.result === "success");
     const capacity = results.find((result) => result.scenario === "increased_outbound_capacity" && result.result === "success");
     return {
       title: "Smallest route-capacity fix",
-      summary: `Replay showed the original ${trace.amount} ${trace.asset} payment fails, 80% still fails, and ${amount64} ${trace.asset} succeeds. Split payment and exact outbound capacity repair also succeeded.`,
-      primaryAction: split
-        ? `Split the payment into two ${Math.ceil(trace.amount / 2)} ${trace.asset} parts, or reduce amount to ${amount64} ${trace.asset}.`
-        : `Reduce amount to ${amount64} ${trace.asset}.`,
+      summary: `Replay showed the original ${trace.amount} ${trace.asset} payment fails, 80% still fails, and a partial payment of ${amount64} ${trace.asset} succeeds. Splitting over the same static route does not complete the original total; exact outbound capacity repair and an alternate route succeeded.`,
+      primaryAction: `Send at most ${amount64} ${trace.asset} now as a partial payment, or add capacity to send the full ${trace.amount} ${trace.asset}.`,
       operatorAction: capacity
         ? `If the operator controls liquidity, add at least ${deficit} ${trace.asset} outbound route capacity.`
         : undefined,
       confidence,
-      primaryResult: split ?? reduced ?? primaryResult,
-      alternatives: successful.filter((result) => result.id !== (split ?? reduced ?? primaryResult)?.id)
+      primaryResult: reduced ?? primaryResult,
+      alternatives: successful.filter((result) => result.id !== (reduced ?? primaryResult)?.id)
     };
   }
 

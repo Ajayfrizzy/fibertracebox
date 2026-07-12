@@ -27,8 +27,8 @@ export const diagnosisCatalog: Record<FailureFingerprint, Omit<Diagnosis, "trace
     ],
     suggestedFixes: [
       "Reduce amount to the largest successful replay amount",
-      "Split the payment across multiple paths",
-      "Add outbound route capacity on the constrained hop"
+      "Add outbound route capacity on the constrained hop",
+      "Use an alternate route with enough capacity for the full payment"
     ],
     confidence: "high",
     replayStrategies: ["reduced_amount_80", "reduced_amount_64", "increased_outbound_capacity", "alternate_route", "split_payment"]

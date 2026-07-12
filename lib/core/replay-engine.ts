@@ -210,7 +210,6 @@ function createReplayResult(trace: PaymentTrace, scenario: ReplayStrategy): Repl
       const first = Math.ceil(amount / 2);
       const second = amount - first;
       const succeeds =
-        fingerprint === "ROUTE_CAPACITY_INSUFFICIENT" ||
         fingerprint === "LIQUIDITY_IMBALANCE" ||
         fingerprint === "RETRY_PATH_UNAVAILABLE" ||
         fingerprint === "FEE_LIMIT_TOO_LOW";
@@ -218,9 +217,11 @@ function createReplayResult(trace: PaymentTrace, scenario: ReplayStrategy): Repl
         succeeds ? "success" : "failed",
         `Split payment into ${first} ${asset} + ${second} ${asset}`,
         Math.max(54, trace.latencyMs - 5),
-        succeeds
-          ? "Splitting widens eligible paths and lowers per-route capacity pressure while preserving the original total amount."
-          : "Split payment does not resolve this failure fingerprint."
+        fingerprint === "ROUTE_CAPACITY_INSUFFICIENT"
+          ? `The route has only ${Math.floor(amount * 0.64)} ${asset} total forwardable capacity. After the first part, the same static route cannot carry the second part, so the full ${amount} ${asset} payment is not completed.`
+          : succeeds
+            ? "Splitting widens eligible paths and lowers per-route capacity pressure while preserving the original total amount."
+            : "Split payment does not resolve this failure fingerprint."
       );
     }
     case "supported_asset": {
@@ -273,7 +274,6 @@ function createReplayResult(trace: PaymentTrace, scenario: ReplayStrategy): Repl
 function chooseRecommendedForTrace(trace: PaymentTrace, results: ReplayResult[]): ReplayResult | undefined {
   if (trace.failureFingerprint === "ROUTE_CAPACITY_INSUFFICIENT") {
     return (
-      results.find((result) => result.scenario === "split_payment" && result.result === "success") ??
       results.find((result) => result.scenario === "reduced_amount_64" && result.result === "success") ??
       results.find((result) => result.scenario === "increased_outbound_capacity" && result.result === "success")
     );

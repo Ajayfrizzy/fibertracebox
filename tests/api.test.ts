@@ -78,7 +78,7 @@ describe("API routes", () => {
     expect(response.status).toBe(201);
     expect(json.trace.status).toBe("replayed");
     expect(json.trace.replayResults.length).toBeGreaterThan(0);
-    expect(json.recommended.scenario).toBe("split_payment");
+    expect(json.recommended.scenario).toBe("reduced_amount_64");
   });
 
   it("can read a full demo trace after scenario creation", async () => {
