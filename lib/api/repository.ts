@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createSupabaseServerClient, hasSupabaseServerConfig } from "@/lib/supabase/server";
+import { normalizeReplayResultsForTrace } from "@/lib/core/replay-engine";
 import type { Diagnosis, PaymentTrace, ReplayResult, TraceEvent } from "@/lib/types/domain";
 
 const memory = {
@@ -347,8 +348,13 @@ function isMissingFileError(error: unknown) {
 }
 
 function normalizeTrace(trace: PaymentTrace): PaymentTrace {
+  const normalizedReplayResults = normalizeReplayResultsForTrace(trace);
+  const traceWithNormalizedReplays = normalizedReplayResults === trace.replayResults
+    ? trace
+    : { ...trace, replayResults: normalizedReplayResults };
+
   if (trace.status !== "failed") {
-    return trace;
+    return traceWithNormalizedReplays;
   }
 
   const duplicateSuccessEvent = trace.events.find(
@@ -356,11 +362,11 @@ function normalizeTrace(trace: PaymentTrace): PaymentTrace {
   );
 
   if (!duplicateSuccessEvent) {
-    return trace;
+    return traceWithNormalizedReplays;
   }
 
   return {
-    ...trace,
+    ...traceWithNormalizedReplays,
     status: "success",
     failureStage: undefined,
     failureFingerprint: undefined,

@@ -25,6 +25,28 @@ export function runReplayStrategy(trace: PaymentTrace, scenario: ReplayStrategy)
   return createReplayResult(trace, scenario);
 }
 
+export function normalizeReplayResultsForTrace(trace: PaymentTrace): ReplayResult[] {
+  if (trace.failureFingerprint !== "ROUTE_CAPACITY_INSUFFICIENT") {
+    return trace.replayResults;
+  }
+
+  const hasReducedSuccess = trace.replayResults.some(
+    (result) => result.scenario === "reduced_amount_64" && result.result === "success"
+  );
+
+  return trace.replayResults.map((result) => {
+    if (result.scenario === "split_payment") {
+      const corrected = createReplayResult(trace, "split_payment");
+      return { ...corrected, id: result.id, recommended: false };
+    }
+
+    return {
+      ...result,
+      recommended: hasReducedSuccess && result.scenario === "reduced_amount_64"
+    };
+  });
+}
+
 export function runReplayToFix(trace: PaymentTrace): ReplayResult[] {
   if (trace.mode !== "sandbox") {
     return [];

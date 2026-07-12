@@ -3,7 +3,7 @@ import { SandboxAdapter } from "@/lib/adapters/sandbox-adapter";
 import { diagnoseTrace } from "@/lib/core/diagnosis-engine";
 import { classifyFiberRpcFailure } from "@/lib/core/fiber-error-classifier";
 import { generateReport } from "@/lib/core/report-generator";
-import { createReplayRecommendation, recommendSmallestFix, runReplayToFix } from "@/lib/core/replay-engine";
+import { createReplayRecommendation, normalizeReplayResultsForTrace, recommendSmallestFix, runReplayToFix } from "@/lib/core/replay-engine";
 import { formatTraceCreatedAt } from "@/lib/core/time-format";
 import { evaluateLiveVerification } from "@/lib/core/live-verification";
 import { createLiveFixRecommendations } from "@/lib/core/live-fix-recommendations";
@@ -150,6 +150,31 @@ describe("FiberTracebox core", () => {
     expect(byScenario.split_payment.explanation).toContain("full 500 CKB payment is not completed");
     expect(recommendation?.primaryAction).toContain("partial payment");
     expect(recommendation?.operatorAction).toContain("180 CKB");
+  });
+
+  it("corrects persisted route-capacity split recommendations from older replays", async () => {
+    const adapter = new SandboxAdapter();
+    const trace = await adapter.runPaymentAttempt({ scenario: "route-capacity" });
+    const currentResults = runReplayToFix(trace);
+    trace.replayResults = currentResults.map((result) =>
+      result.scenario === "split_payment"
+        ? {
+            ...result,
+            result: "success" as const,
+            recommended: true,
+            explanation: "Splitting preserves the original total amount."
+          }
+        : { ...result, recommended: false }
+    );
+
+    const normalized = normalizeReplayResultsForTrace(trace);
+    const split = normalized.find((result) => result.scenario === "split_payment");
+    const reduced = normalized.find((result) => result.scenario === "reduced_amount_64");
+
+    expect(split).toMatchObject({ result: "failed", recommended: false });
+    expect(split?.explanation).toContain("full 500 CKB payment is not completed");
+    expect(reduced).toMatchObject({ result: "success", recommended: true });
+    expect(recommendSmallestFix(normalized)?.scenario).toBe("reduced_amount_64");
   });
 
   it("runs peer offline replay scenarios", async () => {
