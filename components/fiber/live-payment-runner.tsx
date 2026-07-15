@@ -27,7 +27,7 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, publicDryRun
   const [amount, setAmount] = useState("");
   const [feeLimit, setFeeLimit] = useState("");
   const [dryRun, setDryRun] = useState(true);
-  const [apiKey, setApiKey] = useState(() => getStoredApiKey());
+  const [apiKey, setApiKey] = useState("");
   const [operatorAccess, setOperatorAccess] = useState(() => Boolean(getStoredApiKey()));
   const [showOperatorUnlock, setShowOperatorUnlock] = useState(false);
   const [running, setRunning] = useState(false);
@@ -41,8 +41,6 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, publicDryRun
     }
     setRunning(true);
     setError(null);
-    if (operatorAccess) storeApiKey(apiKey);
-
     try {
       const body =
         mode === "invoice"
@@ -201,11 +199,11 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, publicDryRun
           <div className="grid gap-2 rounded-md border border-line bg-panel p-3">
             <label className="grid gap-1 text-sm font-semibold text-ink">Operator API key
               <span className="relative"><KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} autoComplete="off" placeholder="Stored only for this browser session" className="w-full rounded-md border border-line bg-white py-2 pl-9 pr-3 text-sm font-normal outline-none focus:border-ckb" />
+                <input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} autoComplete="new-password" spellCheck={false} placeholder="Stored only for this browser session" className="w-full rounded-md border border-line bg-white py-2 pl-9 pr-3 text-sm font-normal outline-none focus:border-ckb" />
               </span>
             </label>
             <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={!apiKey.trim()} onClick={() => { storeApiKey(apiKey); setOperatorAccess(true); setShowOperatorUnlock(false); setError(null); }} className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><KeyRound size={15} /> Unlock Operator Mode</button>
+              <button type="button" disabled={!apiKey.trim()} onClick={() => { storeApiKey(apiKey); setApiKey(""); setOperatorAccess(true); setShowOperatorUnlock(false); setError(null); }} className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><KeyRound size={15} /> Unlock Operator Mode</button>
               {publicDryRunsEnabled && <button type="button" onClick={() => { setApiKey(""); setShowOperatorUnlock(false); }} className="px-3 py-2 text-sm font-semibold text-gray-600">Cancel</button>}
             </div>
           </div>
@@ -226,7 +224,6 @@ export function LivePaymentRunner({ liveEnabled, allowLivePayments, publicDryRun
             {running ? <Loader2 className="animate-spin" size={16} /> : effectiveDryRun ? <FlaskConical size={16} /> : <Send size={16} />}
             {effectiveDryRun ? "Run Dry-Run" : mode === "invoice" ? "Send Payment" : "Send Keysend"}
           </button>
-          {probe?.pubkey && <span className="mono min-w-0 max-w-full flex-1 truncate text-xs text-gray-500">{probe.pubkey}</span>}
         </div>
       </div>
 
